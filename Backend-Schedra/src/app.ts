@@ -3,6 +3,7 @@ import express, { Express } from "express";
 import path from "node:path";
 
 import { env } from "./config/env";
+import { getTemporaryPreviewOrigins } from "./config/preview-origins";
 import { HealthController } from "./controllers/health.controller";
 import { router } from "./routes";
 import { requestContextMiddleware } from "./shared/http/request-context";
@@ -116,6 +117,7 @@ export class App {
           if (
             !origin ||
             allowedOrigins.includes(origin) ||
+            getTemporaryPreviewOrigins().includes(origin) ||
             (!isProduction && (isLocalDevelopmentOrigin(origin) || isPrivateNetworkOrigin(origin)))
           ) {
             callback(null, true);
