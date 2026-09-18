@@ -22,6 +22,7 @@ import { initializePlatformModels } from "../platform/models/platform-models";
 import { PersonalEventModel } from "../modules/personal-events/models/personal-event.model";
 import { MigrationRunner } from "../database/migrations/migration-runner";
 import { tenantService } from "../platform/tenancy/tenant.service";
+import { AvatarAssetModel } from "../modules/users/models/avatar-asset.model";
 
 type DynamicRecord = Model<Record<string, unknown>, Record<string, unknown>>;
 const APPOINTMENT_SLOT_SIZE_MS = 5 * 60_000;
@@ -72,6 +73,7 @@ class Database {
     }
 
     UserModel.initialize(this.getConnection());
+    AvatarAssetModel.initialize(this.getConnection());
     ClientModel.initialize(this.getConnection());
     ServiceModel.initialize(this.getConnection());
     ProfessionalModel.initialize(this.getConnection());

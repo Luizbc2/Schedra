@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type { RequestHandler } from "express";
 import multer, { type FileFilterCallback, type Multer, type StorageEngine } from "multer";
 import sharp, { type Metadata } from "sharp";
+import { avatarAssetStore, legacyAvatarDirectory, type AvatarAssetStore } from "./avatar-assets";
 
 export const AVATAR_MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -66,17 +66,15 @@ export const createAvatarUpload = (
   },
 });
 
-const avatarUploadRoot = process.env.AVATAR_UPLOAD_ROOT?.trim()
-  || (process.env.VERCEL ? path.join(os.tmpdir(), "schedra-uploads") : path.resolve(process.cwd(), "uploads"));
-
-export const avatarDirectory = path.join(avatarUploadRoot, "avatars");
+export const avatarDirectory = legacyAvatarDirectory;
 
 export const avatarUpload = createAvatarUpload(multer.memoryStorage());
 
 export const processAvatar = async (
   file: Express.Multer.File,
   userId: number,
-  outputDirectory = avatarDirectory,
+  outputDirectory?: string,
+  store: AvatarAssetStore = avatarAssetStore,
 ): Promise<string> => {
   let metadata: Metadata;
 
@@ -96,14 +94,18 @@ export const processAvatar = async (
   }
 
   const filename = buildProcessedAvatarFilename(userId);
-  const destination = path.join(outputDirectory, filename);
   try {
-    await fs.promises.mkdir(outputDirectory, { recursive: true });
-    await sharp(file.buffer, { failOn: "warning", limitInputPixels: 16_777_216 })
+    const content = await sharp(file.buffer, { failOn: "warning", limitInputPixels: 16_777_216 })
       .rotate()
       .resize(512, 512, { fit: "cover", position: "attention", withoutEnlargement: true })
       .webp({ quality: 86, effort: 4 })
-      .toFile(destination);
+      .toBuffer();
+    if (outputDirectory) {
+      await fs.promises.mkdir(outputDirectory, { recursive: true });
+      await fs.promises.writeFile(path.join(outputDirectory, filename), content, { flag: "wx" });
+    } else {
+      await store.save(filename, userId, content);
+    }
     return `/uploads/avatars/${filename}`;
   } catch {
     throw new AvatarStorageError();
@@ -114,6 +116,7 @@ export const removeLocalAvatar = async (avatarUrl?: string | null): Promise<void
   if (!avatarUrl?.startsWith("/uploads/avatars/")) return;
   const filename = path.basename(avatarUrl);
   try {
+    await avatarAssetStore.remove(filename);
     await fs.promises.rm(path.join(avatarDirectory, filename), { force: true });
   } catch (error) {
     console.error(`Avatar cleanup failed for ${filename}.`, error);

@@ -11,11 +11,15 @@ import { fonts, type AppColors } from "../../../theme/tokens";
 import { useAuth } from "../../auth/AuthProvider";
 import { clientsApi, type Client, type ClientInput } from "../api/clients-api";
 import { validateClient } from "../validation/client-validation";
+import { ProfessionalsScreen } from "./ProfessionalsScreen";
+import { ServicesScreen } from "./ServicesScreen";
 
 const emptyInput: ClientInput = { name: "", email: "", phone: "", cpf: "", notes: "" };
 
-export function CatalogScreen({ kind }: { kind: "clients" | "services" }) {
-  return kind === "clients" ? <ClientsScreen /> : <ServicePlaceholder />;
+export function CatalogScreen({ kind }: { kind: "clients" | "professionals" | "services" }) {
+  if (kind === "professionals") return <ProfessionalsScreen />;
+  if (kind === "services") return <ServicesScreen />;
+  return <ClientsScreen />;
 }
 
 function ClientsScreen() {
@@ -103,7 +107,6 @@ function EditorField({ colors, label, ...props }: { colors: AppColors; label: st
   return <View style={styles.field}><Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text><TextInput placeholderTextColor={colors.textMuted} style={[styles.input, props.multiline && styles.notesInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]} {...props} /></View>;
 }
 
-function ServicePlaceholder() { const { colors } = useAppTheme(); return <Screen header={<AppHeader title="Catalogo" />}><View><Text style={[styles.kicker, { color: colors.accent }]}>SERVICOS</Text><Text style={[styles.title, { color: colors.text }]}>O que voce oferece</Text><Text style={[styles.description, { color: colors.textMuted }]}>Duracao, preco e disponibilidade dos seus servicos.</Text></View><View style={[styles.feedback, { backgroundColor: colors.surface, borderColor: colors.border }]}><Ionicons name="cut-outline" size={30} color={colors.textMuted} /><Text style={[styles.feedbackTitle, { color: colors.text }]}>Proximo modulo</Text><Text style={[styles.feedbackDetail, { color: colors.textMuted }]}>O CRUD de servicos entra na proxima entrega.</Text></View></Screen>; }
 function initials(name: string) { return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join(""); }
 
 const styles = StyleSheet.create({

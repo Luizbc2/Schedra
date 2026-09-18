@@ -11,7 +11,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import type { UserRole } from "../../auth/types";
 import { adminUsersApi, type ManagedUser } from "../api/admin-users-api";
 
-export function AdminUsersScreen() {
+export function AdminUsersScreen({ onBack }: { onBack?: () => void }) {
   const { colors } = useAppTheme();
   const { token, user: currentUser } = useAuth();
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -60,7 +60,7 @@ export function AdminUsersScreen() {
     Alert.alert("Excluir usuario?", message, [{ text: "Cancelar", style: "cancel" }, { text: "Excluir", style: "destructive", onPress: () => void execute() }]);
   };
 
-  return <Screen header={<AppHeader eyebrow="CONTROLE DE ACESSO" title="Administracao" />}>
+  return <Screen header={<AppHeader eyebrow="CONTROLE DE ACESSO" onBack={onBack} title="Administração" />}>
     <View><Text style={[styles.kicker, { color: colors.accent }]}>USUARIOS E PERMISSOES</Text><Text style={[styles.title, { color: colors.text }]}>Quem pode fazer o que</Text><Text style={[styles.description, { color: colors.textMuted }]}>Gerencie o acesso sem compartilhar credenciais ou alterar dados operacionais.</Text></View>
     <View style={styles.metrics}><Metric label="USUARIOS" value={users.length} color={colors.accent} /><Metric label="ADMINISTRADORES" value={metrics.admins} color={colors.amber} /><Metric label="ATIVOS" value={metrics.active} color={colors.success} /></View>
     <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><Ionicons name="search" size={19} color={colors.textMuted} /><TextInput accessibilityLabel="Buscar usuarios" onChangeText={setSearch} placeholder="Nome, e-mail ou CPF" placeholderTextColor={colors.textMuted} style={[styles.searchInput, { color: colors.text }]} value={search} />{search ? <Pressable accessibilityLabel="Limpar busca" onPress={() => setSearch("")}><Ionicons name="close-circle" size={19} color={colors.textMuted} /></Pressable> : null}</View>

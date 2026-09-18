@@ -8,6 +8,10 @@ import { SequelizeProfessionalRepository } from "../../modules/professionals/rep
 import { SequelizeServiceRepository } from "../../modules/services/repositories/sequelize-service.repository";
 import { tenantService } from "../../platform/tenancy/tenant.service";
 import { runWithRequestContext } from "../../shared/http/request-context";
+import request from "supertest";
+import sharp from "sharp";
+import { App } from "../../app";
+import { ClientModel } from "../../modules/clients/models/client.model";
 
 const describeWithDatabase = process.env.TEST_DATABASE_URL ? describe : describe.skip;
 
@@ -21,6 +25,9 @@ describeWithDatabase("tenant and scheduling database guarantees", () => {
   let firstWorkspace: Awaited<ReturnType<typeof tenantService.ensureDefaultWorkspace>>;
   let secondWorkspace: Awaited<ReturnType<typeof tenantService.ensureDefaultWorkspace>>;
   let runSuffix: string;
+  let token: string;
+  let secondToken: string;
+  const app = new App().server;
 
   beforeAll(async () => {
     expect(await database.connect()).toBe(true);
@@ -44,6 +51,12 @@ describeWithDatabase("tenant and scheduling database guarantees", () => {
     });
     firstWorkspace = await tenantService.ensureDefaultWorkspace(firstUser);
     secondWorkspace = await tenantService.ensureDefaultWorkspace(secondUser);
+    for (const user of [firstUser, secondUser]) {
+      const login = await request(app).post("/api/auth/login").send({ email: user.email, password: "Integration!123" });
+      expect(login.status).toBe(200);
+      if (user === firstUser) token = login.body.token;
+      else secondToken = login.body.token;
+    }
   }, 60_000);
 
   afterAll(async () => {
@@ -57,6 +70,34 @@ describeWithDatabase("tenant and scheduling database guarantees", () => {
       membershipId: workspace.membershipId,
       organizationRole: workspace.role,
     }, action);
+
+  it("executes HTTP CRUD with real sessions, tenant isolation and persisted changes", async () => {
+    const input = { name: "Cliente CRUD", email: `crud-${runSuffix}@schedra.test`, phone: "11999999999", cpf: "", notes: "Teste de integração" };
+    const created = await request(app).post("/api/clients").auth(token, { type: "bearer" }).send(input);
+    expect(created.status).toBe(201);
+    const id = created.body.client.id;
+    const updated = await request(app).put(`/api/clients/${id}`).auth(token, { type: "bearer" }).send({ ...input, notes: "Alteração persistida" });
+    expect(updated.status).toBe(200);
+    expect((await ClientModel.findByPk(id))?.notes).toBe("Alteração persistida");
+    const list = await request(new App().server).get("/api/clients?search=Cliente%20CRUD").auth(token, { type: "bearer" });
+    expect(list.body.data.some((client: { id: number }) => client.id === id)).toBe(true);
+    expect((await request(app).put(`/api/clients/${id}`).auth(secondToken, { type: "bearer" }).send(input)).status).toBe(404);
+    expect((await request(app).delete(`/api/clients/${id}`).auth(secondToken, { type: "bearer" })).status).toBe(404);
+    expect((await request(app).delete(`/api/clients/${id}`).auth(token, { type: "bearer" })).status).toBe(200);
+    expect(await ClientModel.findByPk(id)).toBeNull();
+    expect((await ClientModel.findByPk(id, { paranoid: false }))?.deletedAt).toBeTruthy();
+  });
+
+  it("uploads and retrieves an avatar from another app instance using the database", async () => {
+    const bytes = await sharp({ create: { width: 32, height: 32, channels: 3, background: "#12695b" } }).png().toBuffer();
+    const uploaded = await request(app).patch("/api/users/me/avatar").auth(token, { type: "bearer" }).attach("avatar", bytes, "avatar.png");
+    expect(uploaded.status).toBe(200);
+    const url = uploaded.body.user.avatarUrl;
+    expect((await UserModel.findByPk(firstUser.id))?.avatarUrl).toBe(url);
+    const image = await request(new App().server).get(url);
+    expect(image.status).toBe(200);
+    expect((await sharp(image.body).metadata()).format).toBe("webp");
+  });
 
   it("não deixa um tenant ler o cliente de outro", async () => {
     const client = await inWorkspace(firstUser, firstWorkspace, () => clients.create(firstUser.id, {

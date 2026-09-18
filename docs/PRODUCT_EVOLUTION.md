@@ -1,88 +1,82 @@
-# Evolução do produto Schedra
+# Proposta de evolução do Schedra
 
-## 1. Contexto do problema
+> Resumo temático. O documento acadêmico consolidado está em [PROPOSTA.md](PROPOSTA.md).
 
-Prestadores de serviço e pequenas equipes costumam distribuir sua operação entre agendas pessoais, mensagens, planilhas e anotações. Essa fragmentação dificulta enxergar horários livres, evita pouco os conflitos de agenda e torna o histórico do cliente dependente da memória de quem realizou o atendimento.
+## 1. Objetivo deste documento
 
-Para uma pessoa que administra apenas os próprios compromissos, ferramentas empresariais também criam complexidade desnecessária. Ela precisa registrar academia, consultas, estudos e outros eventos sem cadastrar profissionais, serviços ou uma estrutura comercial.
+Este documento descreve implementações futuras do Schedra. Ele parte do sistema existente apenas para identificar lacunas; portanto, os itens apresentados como proposta, requisito futuro ou backlog ainda não devem ser tratados como funcionalidades concluídas.
 
-O Schedra resolve esses dois contextos com uma única plataforma de agenda:
+## 2. Situação atual e lacunas
 
-- modo empresarial para clientes, profissionais, serviços e atendimentos;
-- modo pessoal para compromissos individuais;
-- experiência web e aplicativo móvel consumindo a mesma API;
-- controle administrativo de usuários, papéis e contas bloqueadas.
+O Schedra já oferece autenticação, agenda, cadastros operacionais, perfil, modos pessoal e empresarial e integração entre interfaces, API e banco. A análise de uso revelou quatro lacunas prioritárias:
 
-## 2. Objetivo do produto
-
-Centralizar a rotina de agenda em uma experiência rápida e segura, reduzindo conflitos de horário e mantendo os dados operacionais sincronizados entre aplicativo, API e banco de dados.
-
-## 3. Personas
-
-### Persona 1 - Gestora de negócio
-
-**Marina, 34 anos, proprietária de um salão.** Organiza quatro profissionais e atende clientes durante o dia. Precisa visualizar ocupação, localizar clientes e impedir que horários conflitantes sejam cadastrados.
-
-Necessidades atendidas:
-
-- agenda empresarial consolidada;
-- cadastro e pesquisa de clientes;
-- vínculo entre cliente, profissional e serviço;
-- controle de usuários e permissões administrativas.
-
-### Persona 2 - Profissional autônomo
-
-**Carlos, 29 anos, barbeiro autônomo.** Trabalha sozinho, mas precisa manter clientes e atendimentos organizados pelo celular. Valoriza ações rápidas e uma interface que funcione com uma mão.
-
-Necessidades atendidas:
-
-- CRUD de clientes no aplicativo;
-- novo agendamento pelo botão flutuante;
-- navegação inferior com os módulos principais;
-- perfil e foto de identificação.
-
-### Persona 3 - Usuária pessoal
-
-**Ana, 22 anos, estudante.** Quer organizar academia, psicólogo, provas e compromissos sem configurar uma empresa.
-
-Necessidades atendidas:
-
-- modo pessoal acessível pela mesma conta;
-- compromissos com título, local, data, horário e observações;
-- interface sem profissionais e serviços;
-- isolamento entre agenda pessoal e empresarial.
-
-## 4. Evolução por entregas
-
-| Etapa | Evolução | Resultado verificável |
+| Lacuna observada | Impacto para o usuário | Evolução proposta |
 | --- | --- | --- |
-| 1. Fundação web | Login, agenda, clientes, profissionais e serviços | Aplicação web funcional integrada à API |
-| 2. Infraestrutura | Docker Compose, MySQL, Nginx, HTTPS e GitFlow | Ambiente reproduzível e proxy reverso seguro |
-| 3. Identidade | Horarius foi reposicionado como Schedra | Nova marca, tema claro/escuro e interface responsiva |
-| 4. Modelo de plataforma | Expansão para 30 tabelas | Estrutura preparada para organizações, financeiro e auditoria |
-| 5. Aplicativo móvel | Expo, React Native e navegação própria | Aplicativo compartilhando contratos com a API |
-| 6. Modos de uso | Alternância pessoal/empresarial após o login | Experiência adaptada ao contexto do usuário |
-| 7. Funcionalidades móveis | Agenda, CRUD de clientes, perfil e avatar | Fluxos principais executáveis no celular |
-| 8. Segurança funcional | Papéis admin/usuário e bloqueio de contas | Rotas administrativas protegidas no backend e na interface |
-| 9. Qualidade | Testes, documentação e rastreabilidade | Evidências diretamente ligadas à rubrica acadêmica |
+| O calendário não oferece uma interação direta por data | Criar ou consultar um evento exige mais navegação do que o necessário | Pop-up contextual ao selecionar uma data |
+| O usuário não recebe lembretes dos compromissos | Eventos importantes podem ser esquecidos | Central de notificações e lembretes configuráveis |
+| A aplicação web depende integralmente de conexão | Uma oscilação de rede interrompe até consultas recentes | PWA com Service Worker, cache controlado e fila de sincronização |
+| A administração está concentrada no aplicativo móvel | A gestão de muitos usuários é pouco ergonômica | Painel administrativo web responsivo |
 
-## 5. Decisões de produto
+## 3. Personas impactadas
 
-1. A API REST é a fonte única de regras e dados para web e aplicativo.
-2. A conta é única e o usuário escolhe o modo pessoal ou empresarial no menu principal.
-3. Usuários comuns não recebem controles administrativos.
-4. Uma conta bloqueada perde acesso mesmo que possua um token antigo.
-5. O aplicativo prioriza navegação inferior e ações rápidas em telas pequenas.
-6. Notificações remotas foram retiradas do escopo atual por não fazerem parte da rubrica e exigirem uma development build específica.
+### Marina - gestora de negócio
 
-## 6. Conexão com o cliente
+Administra uma equipe e precisa encontrar rapidamente os compromissos de um dia, receber alertas operacionais e gerenciar usuários em uma tela ampla. O painel web e o calendário contextual reduzem tarefas repetitivas.
 
-As funcionalidades não foram escolhidas apenas pela capacidade técnica. Cada uma responde a uma dor das personas: fragmentação de dados, excesso de passos no celular, mistura entre vida pessoal e trabalho e ausência de controle sobre usuários da equipe. O produto pode ser demonstrado por jornadas completas, desde o cadastro até a persistência de um cliente ou compromisso.
+### Carlos - profissional autônomo
 
-## 7. Próximas evoluções
+Trabalha principalmente pelo celular e nem sempre possui conexão estável. Precisa consultar a agenda recente, registrar uma ação temporariamente sem rede e ser lembrado antes do próximo atendimento.
 
-- concluir o CRUD visual de serviços no aplicativo;
-- implementar troca de unidade e membros por organização;
-- adicionar auditoria visual de ações administrativas;
-- executar testes automatizados de interface em dispositivos reais;
-- avaliar notificações locais e remotas em uma development build futura.
+### Ana - usuária pessoal
+
+Organiza estudos, consultas e atividades recorrentes. Precisa tocar em uma data, entender o que acontecerá naquele dia e criar um compromisso sem preencher novamente a data selecionada.
+
+## 4. Visão da solução futura
+
+### 4.1 Calendário interativo
+
+Ao selecionar uma data, a interface abrirá um pop-up no desktop e um painel inferior no celular. O componente mostrará um resumo do dia e permitirá criar, editar, concluir ou abrir os detalhes de um compromisso. A data selecionada será preenchida automaticamente no formulário.
+
+### 4.2 Notificações
+
+O usuário poderá definir se deseja lembretes, com qual antecedência e por qual canal disponível. A primeira entrega priorizará notificações locais no aplicativo e uma central interna; notificações push remotas dependerão de development build, registro do dispositivo e consentimento explícito.
+
+### 4.3 PWA e Service Worker
+
+A aplicação web será instalável e manterá em cache apenas o shell da interface e leituras permitidas. Operações de escrita feitas sem conexão entrarão em uma fila local identificada por chave idempotente. A sincronização ocorrerá quando a conexão retornar, com indicação visual de pendência ou conflito.
+
+O Service Worker não substituirá a API nem o banco de dados. Dados sensíveis, credenciais e respostas administrativas não serão armazenados indiscriminadamente no cache.
+
+### 4.4 Administração web
+
+Usuários administradores terão uma rota web protegida para pesquisar contas, consultar estado e papel, promover ou rebaixar usuários e bloquear ou reativar acessos. A API continuará revalidando papel e estado da conta em todas as operações.
+
+## 5. Objetivos mensuráveis
+
+1. Reduzir para no máximo dois toques a criação de compromisso a partir de uma data.
+2. Exibir compromissos do dia sem abandonar a visualização do calendário.
+3. Entregar lembretes no horário configurado e registrar o resultado da tentativa.
+4. Permitir consulta ao shell e aos dados recentes autorizados durante uma interrupção de rede.
+5. Sincronizar operações pendentes sem duplicar registros.
+6. Disponibilizar no navegador todas as ações administrativas já protegidas pela API.
+
+## 6. Backlog proposto por entregas
+
+| Prioridade | Entrega | Conteúdo | Dependências |
+| --- | --- | --- | --- |
+| P0 | PR 1 - Calendário contextual | Componente mensal, seleção de data, pop-up/painel inferior e testes de interação | Contratos atuais de eventos |
+| P0 | PR 2 - Administração web | Rota protegida, tabela de usuários, filtros, ações e estados de erro | RBAC da API |
+| P1 | PR 3 - Preferências de lembrete | Modelo de preferências, endpoints, formulário e central interna | Usuário autenticado |
+| P1 | PR 4 - Notificações no dispositivo | Permissão, agendamento local, cancelamento e histórico de entrega | Development build para validação completa |
+| P1 | PR 5 - Fundação PWA | Manifesto, instalação, Service Worker e estratégia de cache | HTTPS e versão do frontend |
+| P2 | PR 6 - Operação offline | Fila idempotente, reconciliação, conflitos e indicadores de sincronização | Fundação PWA e suporte da API |
+
+## 7. Fora do primeiro ciclo
+
+- envio de SMS ou WhatsApp;
+- cobrança por notificações;
+- edição colaborativa em tempo real;
+- funcionamento administrativo offline;
+- sincronização bidirecional com Google Calendar.
+
+Esses itens podem ser reavaliados após métricas de uso das quatro evoluções prioritárias.

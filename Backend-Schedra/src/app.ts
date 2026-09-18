@@ -1,6 +1,6 @@
 import cors from "cors";
 import express, { Express } from "express";
-import path from "node:path";
+import { createAvatarAssetRouter } from "./modules/users/upload/avatar-assets";
 
 import { env } from "./config/env";
 import { getTemporaryPreviewOrigins } from "./config/preview-origins";
@@ -129,7 +129,7 @@ export class App {
       })
     );
     this.server.use(express.json({ limit: "1mb" }));
-    this.server.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+    this.server.use("/uploads/avatars", createAvatarAssetRouter());
   }
 
   private routes(): void {

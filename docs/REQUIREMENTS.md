@@ -1,68 +1,94 @@
-# Requisitos do Schedra
+# Requisitos das próximas implementações do Schedra
 
-## 1. Requisitos funcionais
+> Catálogo detalhado. A narrativa consolidada está em [PROPOSTA.md](PROPOSTA.md).
 
-| Código | Requisito | Perfil | Evidência principal |
+## 1. Escopo
+
+Os requisitos abaixo especificam funcionalidades futuras. O status `Planejado` indica que o comportamento foi documentado, mas ainda depende de implementação, testes e aceite.
+
+## 2. Requisitos funcionais futuros
+
+| Código | Requisito futuro | Perfil | Status |
 | --- | --- | --- | --- |
-| RF01 | Permitir cadastro único com nome, CPF, e-mail e senha | Público | Tela de cadastro e `POST /api/users` |
-| RF02 | Autenticar por e-mail e senha | Público | Tela de login e `POST /api/auth/login` |
-| RF03 | Manter a sessão autenticada no aplicativo | Todos | `AuthProvider` e Expo SecureStore |
-| RF04 | Exibir agenda correspondente ao modo de trabalho ativo | Todos | Agenda empresarial ou pessoal |
-| RF05 | Criar, listar, editar e excluir clientes | Empresarial | CRUD mobile de clientes |
-| RF06 | Pesquisar clientes por dados cadastrais | Empresarial | Campo de busca de clientes |
-| RF07 | Criar, listar, editar e excluir agendamentos | Empresarial | Agenda e API de appointments |
-| RF08 | Vincular cliente, profissional e serviço ao agendamento | Empresarial | Editor de agendamento |
-| RF09 | Criar, listar, editar e excluir compromissos pessoais | Pessoal | Agenda e API de personal events |
-| RF10 | Atualizar os dados do próprio perfil | Todos | Perfil e `PUT /api/users/me` |
-| RF11 | Selecionar e enviar uma foto de perfil | Todos | Expo ImagePicker, Multer e avatar do usuário |
-| RF12 | Alternar entre tema claro e escuro | Todos | ThemeProvider persistente |
-| RF13 | Listar usuários para administração | Admin | Painel administrativo |
-| RF14 | Promover ou rebaixar outro usuário | Admin | Controle de papel e rota protegida |
-| RF15 | Bloquear, reativar ou excluir outro usuário | Admin | Controles administrativos |
-| RF16 | Encerrar a sessão do usuário | Todos | Ação Sair da conta |
-| RF17 | Alternar entre os modos pessoal e empresarial na mesma conta | Todos | Switch animado no cabeçalho |
+| RFF01 | Exibir um calendário mensal com indicação dos dias que possuem compromissos | Todos | Planejado |
+| RFF02 | Abrir um pop-up ao selecionar uma data no desktop e um painel inferior no celular | Todos | Planejado |
+| RFF03 | Listar no componente contextual os compromissos da data selecionada | Todos | Planejado |
+| RFF04 | Iniciar um novo compromisso com a data selecionada já preenchida | Todos | Planejado |
+| RFF05 | Permitir abrir, editar, concluir ou excluir um compromisso a partir do resumo do dia | Todos | Planejado |
+| RFF06 | Permitir configurar lembretes e antecedência por compromisso | Todos | Planejado |
+| RFF07 | Exibir uma central com notificações não lidas, lidas, agendadas e falhas | Todos | Planejado |
+| RFF08 | Solicitar consentimento antes de registrar um dispositivo para notificações | Todos | Planejado |
+| RFF09 | Cancelar ou reagendar o lembrete quando o compromisso for alterado ou excluído | Todos | Planejado |
+| RFF10 | Instalar a aplicação web como PWA em navegadores compatíveis | Web | Planejado |
+| RFF11 | Disponibilizar o shell e leituras recentes autorizadas durante perda de conexão | Web | Planejado |
+| RFF12 | Enfileirar alterações offline e sincronizá-las quando a conexão retornar | Web | Planejado |
+| RFF13 | Exibir ao usuário o estado offline, pendente, sincronizado ou em conflito | Web | Planejado |
+| RFF14 | Disponibilizar painel administrativo protegido na aplicação web | Admin | Planejado |
+| RFF15 | Pesquisar e filtrar usuários por nome, e-mail, papel e estado | Admin | Planejado |
+| RFF16 | Promover, rebaixar, bloquear e reativar outras contas pelo painel web | Admin | Planejado |
+| RFF17 | Registrar em auditoria cada ação administrativa futura | Admin | Planejado |
 
-## 2. Requisitos não funcionais
+## 3. Requisitos não funcionais futuros
 
 | Código | Requisito | Critério de aceitação |
 | --- | --- | --- |
-| RNF01 | Segurança de credenciais | Senhas armazenadas com hash e token JWT com expiração |
-| RNF02 | Armazenamento seguro no dispositivo | Token salvo pelo Expo SecureStore, não em texto aberto |
-| RNF03 | Autorização | Rotas administrativas retornam `403` para usuário comum |
-| RNF04 | Compatibilidade | Bundle gerado para Android, iOS e web sem erro de tipagem |
-| RNF05 | Responsividade | Conteúdo utilizável em larguras móveis e desktop sem sobreposição |
-| RNF06 | Usabilidade | Navegação principal acessível em até um toque pela barra inferior |
-| RNF07 | Integridade de upload | Somente JPG, JPEG, PNG ou WEBP de até 5 MB |
-| RNF08 | Ausência de colisão | Cada avatar recebe nome com timestamp e UUID |
-| RNF09 | Manutenibilidade | Código TypeScript organizado por feature e responsabilidades |
-| RNF10 | Persistência | Dados permanecem no banco após reinício da API |
-| RNF11 | Disponibilidade local | Docker Compose inicia banco, backend, frontend e proxy |
-| RNF12 | Qualidade | Backend coberto por Jest e contratos principais por Playwright |
+| RNFF01 | Responsividade | Pop-up permanece visível no desktop e torna-se painel inferior em telas móveis sem sobreposição |
+| RNFF02 | Acessibilidade | Calendário operável por teclado, foco preso no diálogo e rótulos compreensíveis por leitor de tela |
+| RNFF03 | Desempenho | Alterar o mês não bloqueia a interface e consulta apenas o intervalo necessário |
+| RNFF04 | Segurança de cache | Tokens, senhas e respostas administrativas não são gravados pelo Service Worker |
+| RNFF05 | Consistência offline | Toda escrita pendente possui identificador idempotente e não cria duplicidade ao sincronizar |
+| RNFF06 | Recuperação de conflito | Conflitos exibem os dados locais e remotos antes de exigir uma escolha |
+| RNFF07 | Privacidade | Notificações dependem de consentimento revogável e evitam conteúdo sensível na tela bloqueada por padrão |
+| RNFF08 | Autorização | A interface oculta controles indevidos e a API retorna `403` para usuários sem papel administrativo |
+| RNFF09 | Observabilidade | Falhas de sincronização e entrega geram registros correlacionados sem expor dados pessoais |
+| RNFF10 | Testabilidade | Fluxos críticos possuem testes unitários, de integração e ao menos um cenário de interface |
 
-## 3. Regras de negócio
+## 4. Regras de negócio futuras
 
-| Código | Regra |
+| Código | Regra futura |
 | --- | --- |
-| RN01 | E-mail e CPF devem ser únicos entre os usuários. |
-| RN02 | A senha deve ter no mínimo oito caracteres, maiúscula, minúscula, número e caractere especial. |
-| RN03 | A mesma conta pode alternar entre os modos pessoal e empresarial após a autenticação. |
-| RN04 | O modo pessoal acessa compromissos pessoais e não depende de profissionais ou serviços. |
-| RN05 | O modo empresarial pode gerenciar clientes e agendamentos operacionais. |
-| RN06 | Apenas administradores acessam e alteram usuários. |
-| RN07 | Um administrador não pode rebaixar, bloquear ou excluir a própria conta. |
-| RN08 | Usuário bloqueado não pode autenticar nem reutilizar privilégios antigos. |
-| RN09 | Um usuário somente pode editar o próprio perfil. |
-| RN10 | Avatar deve possuir extensão e MIME compatíveis e respeitar o limite de 5 MB. |
-| RN11 | Dados de clientes e agenda são filtrados pelo proprietário autenticado. |
-| RN12 | Agendamentos empresariais exigem cliente, profissional, serviço, data e horário válidos. |
+| RNFUT01 | Selecionar uma data não cria um compromisso automaticamente. |
+| RNFUT02 | O formulário aberto pelo calendário recebe a data escolhida, mas o usuário confirma horário e demais campos. |
+| RNFUT03 | Compromissos encerrados aparecem no histórico do dia, não na lista de próximos horários. |
+| RNFUT04 | Um lembrete não pode ser agendado para depois do início do compromisso. |
+| RNFUT05 | Alterar data, horário ou antecedência substitui o lembrete anterior. |
+| RNFUT06 | Excluir um compromisso cancela seus lembretes ainda pendentes. |
+| RNFUT07 | Negar permissão de notificação não impede o uso da agenda. |
+| RNFUT08 | A central interna continua utilizável mesmo quando push remoto não estiver disponível. |
+| RNFUT09 | Escritas offline são sincronizadas na ordem em que foram confirmadas pelo usuário. |
+| RNFUT10 | Operações administrativas não podem ser executadas offline. |
+| RNFUT11 | Um administrador não pode rebaixar, bloquear ou excluir a própria conta. |
+| RNFUT12 | O backend sempre revalida papel e estado da conta; visibilidade da tela não concede permissão. |
 
-## 4. Critérios de aceite da funcionalidade principal
+## 5. Critérios de aceite por épico
 
-1. O usuário empresarial autentica no aplicativo.
-2. Cadastra um cliente com dados válidos.
-3. O aplicativo envia os dados para a API.
-4. A API valida a regra e persiste o registro no banco.
-5. O cliente aparece imediatamente na listagem.
-6. O usuário edita o cliente e a alteração permanece após recarregar.
-7. O usuário exclui o cliente e ele deixa de aparecer.
-8. Tentativas inválidas exibem mensagem e não alteram o banco.
+### Calendário contextual
+
+1. O usuário seleciona um dia com ou sem compromissos.
+2. A interface abre o componente adequado ao tamanho da tela.
+3. O resumo exibe somente registros autorizados daquele dia.
+4. A ação de criar abre o formulário com a data correta.
+5. Fechar o componente devolve o foco à data selecionada.
+
+### Notificações
+
+1. O usuário escolhe a antecedência e concede ou recusa a permissão.
+2. O sistema registra o lembrete sem impedir o salvamento do compromisso em caso de recusa.
+3. Editar ou excluir o compromisso atualiza o agendamento do lembrete.
+4. A central interna informa se o lembrete está agendado, entregue, lido, cancelado ou falhou.
+
+### PWA e operação offline
+
+1. O navegador oferece instalação em ambiente HTTPS compatível.
+2. Com a rede indisponível, o shell abre e indica o estado offline.
+3. Uma alteração permitida entra na fila local com identificador único.
+4. Ao retornar a conexão, a API recebe a operação uma única vez.
+5. Conflitos não sobrescrevem silenciosamente os dados remotos.
+
+### Administração web
+
+1. O administrador acessa a rota e pesquisa usuários.
+2. Um usuário comum recebe `403` ao chamar a API administrativa diretamente.
+3. A alteração exige confirmação e atualiza a listagem após resposta da API.
+4. Ações contra a própria conta são bloqueadas conforme as regras de negócio.
+5. Toda alteração gera registro de auditoria.

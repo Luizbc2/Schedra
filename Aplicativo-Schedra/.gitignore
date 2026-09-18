@@ -7,6 +7,9 @@ node_modules/
 .expo/
 dist/
 dist-web/
+dist-rubrica/
+dist-review/
+dist-native/
 web-build/
 expo-env.d.ts
 

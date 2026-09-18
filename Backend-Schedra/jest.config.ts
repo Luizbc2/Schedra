@@ -7,6 +7,7 @@ const config: Config = {
   testMatch: ["**/__tests__/**/*.spec.ts"],
   moduleFileExtensions: ["ts", "js", "json"],
   clearMocks: true,
+  setupFiles: ["<rootDir>/src/__tests__/integration/database-test-env.ts"],
   modulePathIgnorePatterns: ["<rootDir>/dist"],
 };
 

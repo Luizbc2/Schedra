@@ -1,322 +1,252 @@
-# Diagramas do Schedra
+# Diagramas das implementações futuras do Schedra
 
-Os diagramas abaixo usam Mermaid e são renderizados diretamente pelo GitHub. Cada fluxo representa funcionalidades implementadas no projeto.
+> Catálogo técnico. A proposta consolidada com os diagramas incorporados está em [PROPOSTA.md](PROPOSTA.md).
 
-## 1. Diagrama entidade-relacionamento
+Os diagramas desta seção representam a solução proposta para lacunas ainda existentes. Eles não afirmam que os componentes, tabelas ou fluxos já estejam implementados.
 
-O DER destaca o núcleo funcional usado pelo aplicativo. As tabelas complementares da plataforma estão catalogadas em `SCHEDRA_PRODUCT_ARCHITECTURE.md`.
+Versão visual editável: [Schedra-revisado.excalidraw](diagrams/Schedra-revisado.excalidraw). Prévia das nove pranchas: [overview.png](diagrams/overview.png).
+
+## Banco atual
+
+O DER completo do banco existente está em [schedra-database.dbml](diagrams/schedra-database.dbml), pronto para importação no dbdiagram. A [visualização online no dbdiagram](https://dbdiagram.io/d/Schedra-DER-completo-6aabd504b73118d200aba4ce) apresenta todas as tabelas e relações em formato enxuto. O modelo contém 34 tabelas de domínio, a tabela técnica `schema_migrations` e 56 relacionamentos. O DER desta página, por outro lado, descreve apenas a evolução futura.
+
+## 1. Arquitetura proposta
+
+```mermaid
+flowchart LR
+    WEB[Aplicação web React]
+    APP[Aplicativo Expo]
+    SW[Service Worker]
+    QUEUE[Fila offline]
+    API[API Express]
+    WORKER[Processador de notificações]
+    PUSH[Serviço de push]
+    DB[(Banco de dados)]
+
+    WEB --> SW
+    SW -->|cache seguro| WEB
+    SW --> QUEUE
+    QUEUE -->|sincronização idempotente| API
+    WEB -->|HTTPS| API
+    APP -->|HTTPS| API
+    API --> DB
+    WORKER --> DB
+    WORKER --> PUSH
+    PUSH --> APP
+```
+
+O Service Worker atende somente a aplicação web. Ele preserva o shell e leituras autorizadas, mas não substitui a API. O processador de notificações consulta lembretes pendentes e registra o resultado de cada tentativa.
+
+## 2. DER proposto para lembretes e sincronização
 
 ```mermaid
 erDiagram
-    USERS ||--o{ CLIENTS : possui
-    USERS ||--o{ SERVICES : oferece
-    USERS ||--o{ PROFESSIONALS : gerencia
-    USERS ||--o{ PERSONAL_EVENTS : organiza
-    USERS ||--o{ ORGANIZATIONS : administra
-    USERS ||--o{ MEMBERSHIPS : participa
+    USERS ||--o{ NOTIFICATION_PREFERENCES : configura
+    USERS ||--o{ DEVICE_TOKENS : autoriza
     USERS ||--o{ NOTIFICATIONS : recebe
-    CLIENTS ||--o{ APPOINTMENTS : agenda
-    SERVICES ||--o{ APPOINTMENTS : define
-    PROFESSIONALS ||--o{ APPOINTMENTS : realiza
-    PROFESSIONALS ||--o{ PROFESSIONAL_WORK_DAYS : possui
-    ORGANIZATIONS ||--o{ LOCATIONS : possui
-    ORGANIZATIONS ||--o{ ROLES : configura
-    ORGANIZATIONS ||--o{ MEMBERSHIPS : agrega
-    ROLES ||--o{ MEMBERSHIPS : autoriza
-    ROLES ||--o{ ROLE_PERMISSIONS : possui
-    PERMISSIONS ||--o{ ROLE_PERMISSIONS : compoe
-    APPOINTMENTS ||--o{ PAYMENTS : gera
-    APPOINTMENTS ||--o{ APPOINTMENT_NOTES : recebe
-    APPOINTMENTS ||--o{ APPOINTMENT_STATUS_HISTORY : registra
+    USERS ||--o{ SYNC_OPERATIONS : produz
+    APPOINTMENTS ||--o{ REMINDERS : agenda
+    PERSONAL_EVENTS ||--o{ REMINDERS : agenda
+    REMINDERS ||--o{ NOTIFICATIONS : origina
 
-    USERS {
-        int id PK
-        string name
-        string email UK
-        string cpf UK
-        string password
-        enum accountType
-        enum role
-        boolean active
-        string avatarUrl
-    }
-    CLIENTS {
+    NOTIFICATION_PREFERENCES {
         int id PK
         int userId FK
-        string name
-        string email
-        string phone
-        string cpf
-        text notes
+        boolean enabled
+        string channel
+        int defaultLeadMinutes
+        boolean showSensitiveContent
     }
-    SERVICES {
+    DEVICE_TOKENS {
         int id PK
         int userId FK
-        string name
-        int durationMinutes
-        decimal price
+        string tokenHash UK
+        string platform
+        datetime revokedAt
     }
-    PROFESSIONALS {
-        int id PK
-        int userId FK
-        string name
-        string email
-        string phone
-    }
-    PROFESSIONAL_WORK_DAYS {
-        int id PK
-        int professionalId FK
-        int weekday
-        time startsAt
-        time endsAt
-    }
-    APPOINTMENTS {
-        int id PK
-        int userId FK
-        int clientId FK
-        int serviceId FK
-        int professionalId FK
-        datetime startsAt
-        string status
-        text notes
-    }
-    PERSONAL_EVENTS {
-        int id PK
-        int userId FK
-        string title
-        string location
-        datetime startsAt
-        text notes
-    }
-    ORGANIZATIONS {
-        int id PK
-        int ownerUserId FK
-        string name
-        string slug UK
-    }
-    LOCATIONS {
-        int id PK
-        int organizationId FK
-        string name
-        string timezone
-    }
-    ROLES {
-        int id PK
-        int organizationId FK
-        string name
-    }
-    PERMISSIONS {
-        int id PK
-        string code UK
-    }
-    ROLE_PERMISSIONS {
-        int id PK
-        int roleId FK
-        int permissionId FK
-    }
-    MEMBERSHIPS {
-        int id PK
-        int organizationId FK
-        int userId FK
-        int roleId FK
-    }
-    PAYMENTS {
+    REMINDERS {
         int id PK
         int appointmentId FK
-        decimal amount
+        int personalEventId FK
+        datetime scheduledFor
         string status
     }
     NOTIFICATIONS {
         int id PK
         int userId FK
+        int reminderId FK
         string channel
         string status
+        datetime readAt
     }
-    APPOINTMENT_NOTES {
-        int id PK
-        int appointmentId FK
-        text content
-    }
-    APPOINTMENT_STATUS_HISTORY {
-        int id PK
-        int appointmentId FK
-        string fromStatus
-        string toStatus
+    SYNC_OPERATIONS {
+        string idempotencyKey PK
+        int userId FK
+        string resourceType
+        string operation
+        int baseVersion
+        string status
     }
 ```
 
-## 2. Caso de uso - operação empresarial
+## 3. Caso de uso proposto - calendário e operação offline
 
 ```mermaid
 flowchart LR
-    Gestor([Gestor empresarial])
-    Profissional([Profissional])
-    UC1((Autenticar))
-    UC2((Gerenciar clientes))
-    UC3((Gerenciar agenda))
-    UC4((Selecionar serviço))
-    UC5((Selecionar profissional))
-    UC6((Atualizar perfil e avatar))
-    UC7((Consultar atendimentos))
+    U([Usuário autenticado])
+    UC1((Selecionar uma data))
+    UC2((Consultar resumo do dia))
+    UC3((Criar compromisso))
+    UC4((Editar ou concluir compromisso))
+    UC5((Consultar dados recentes offline))
+    UC6((Sincronizar alteração pendente))
+    UC7((Resolver conflito))
 
-    Gestor --- UC1
-    Gestor --- UC2
-    Gestor --- UC3
-    Gestor --- UC6
-    Gestor --- UC7
-    Profissional --- UC1
-    Profissional --- UC7
-    UC3 -. inclui .-> UC4
-    UC3 -. inclui .-> UC5
+    U --- UC1
+    U --- UC2
+    U --- UC3
+    U --- UC4
+    U --- UC5
+    U --- UC6
+    U --- UC7
+    UC1 -. abre .-> UC2
+    UC3 -. pode gerar .-> UC6
+    UC4 -. pode gerar .-> UC6
+    UC6 -. estende .-> UC7
 ```
 
-## 3. Caso de uso - modo pessoal e administração
+## 4. Caso de uso proposto - notificações e administração web
 
 ```mermaid
 flowchart LR
-    Pessoal([Usuário pessoal])
-    Admin([Administrador])
-    UC1((Alternar para modo pessoal))
-    UC2((Autenticar))
-    UC3((Gerenciar compromissos))
-    UC4((Alternar tema))
-    UC5((Enviar avatar))
-    UC6((Listar usuários))
-    UC7((Alterar papel))
-    UC8((Bloquear ou reativar))
-    UC9((Excluir usuário))
+    U([Usuário autenticado])
+    A([Administrador])
+    UC1((Configurar lembretes))
+    UC2((Autorizar dispositivo))
+    UC3((Consultar central de notificações))
+    UC4((Marcar notificação como lida))
+    UC5((Pesquisar usuários))
+    UC6((Alterar papel ou estado))
+    UC7((Consultar auditoria))
 
-    Pessoal --- UC1
-    Pessoal --- UC2
-    Pessoal --- UC3
-    Pessoal --- UC4
-    Pessoal --- UC5
-    Admin --- UC2
-    Admin --- UC6
-    Admin --- UC7
-    Admin --- UC8
-    Admin --- UC9
-    UC7 -. exige .-> UC6
-    UC8 -. exige .-> UC6
-    UC9 -. exige .-> UC6
+    U --- UC1
+    U --- UC2
+    U --- UC3
+    U --- UC4
+    A --- UC5
+    A --- UC6
+    A --- UC7
+    UC1 -. inclui .-> UC3
+    UC6 -. inclui .-> UC7
 ```
 
-## 4. Atividade - cadastrar cliente pelo aplicativo
+## 5. Atividade proposta - interação com uma data
 
 ```mermaid
 flowchart TD
-    A([Início]) --> B[Usuário abre Clientes]
-    B --> C[Toca em Novo cliente]
-    C --> D[Preenche os dados]
-    D --> E{Validação local aprovada?}
-    E -- Não --> F[Exibir erros no formulário]
-    F --> D
-    E -- Sim --> G[Enviar POST para a API]
-    G --> H{Token e dados válidos?}
-    H -- Não --> I[API retorna erro sem persistir]
-    I --> J[Aplicativo exibe mensagem]
-    J --> D
-    H -- Sim --> K[Persistir cliente no banco]
-    K --> L[Retornar cliente criado]
-    L --> M[Atualizar listagem]
-    M --> N([Fim])
+    A([Início]) --> B[Selecionar uma data no calendário]
+    B --> C[Consultar compromissos autorizados do dia]
+    C --> D{Tamanho da tela}
+    D -- Desktop --> E[Abrir pop-up ancorado]
+    D -- Mobile --> F[Abrir painel inferior]
+    E --> G[Exibir resumo e ações]
+    F --> G
+    G --> H{Ação escolhida}
+    H -- Novo --> I[Abrir formulário com data preenchida]
+    H -- Abrir --> J[Mostrar detalhes do compromisso]
+    H -- Fechar --> K[Devolver foco ao dia selecionado]
+    I --> L([Fim])
+    J --> L
+    K --> L
 ```
 
-## 5. Atividade - enviar foto de perfil
+## 6. Atividade proposta - preparar e entregar lembrete
 
 ```mermaid
 flowchart TD
-    A([Início]) --> B[Usuário abre Perfil]
-    B --> C[Seleciona imagem na galeria]
-    C --> D[Aplicativo solicita permissão]
-    D --> E{Permissão concedida?}
-    E -- Não --> F[Informar que o acesso é necessário]
-    F --> Z([Fim])
-    E -- Sim --> G[Recortar e preparar imagem]
-    G --> H[Enviar multipart para a API]
-    H --> I{Extensão e MIME compatíveis?}
-    I -- Não --> J[Rejeitar com HTTP 400]
-    I -- Sim --> K{Tamanho até 5 MB?}
-    K -- Não --> L[Rejeitar com HTTP 413]
-    K -- Sim --> M[Gerar nome com timestamp e UUID]
-    M --> N[Salvar arquivo com Multer]
-    N --> O[Atualizar avatarUrl no banco]
-    O --> P[Exibir nova foto]
+    A([Compromisso salvo]) --> B{Lembrete habilitado?}
+    B -- Não --> Z([Fim sem notificação])
+    B -- Sim --> C[Validar antecedência e consentimento]
+    C --> D{Canal disponível?}
+    D -- Não --> E[Registrar indisponibilidade na central]
+    D -- Sim --> F[Agendar lembrete]
+    F --> G[Processador busca lembretes vencidos]
+    G --> H[Enviar pelo canal autorizado]
+    H --> I{Entrega aceita?}
+    I -- Sim --> J[Registrar entrega]
+    I -- Não --> K[Registrar falha e política de nova tentativa]
+    E --> Z
     J --> Z
-    L --> Z
-    P --> Z
+    K --> Z
 ```
 
-## 6. Sequência - autenticação e autorização administrativa
+## 7. Sequência proposta - escrita offline e sincronização
 
 ```mermaid
 sequenceDiagram
     actor U as Usuário
-    participant A as Aplicativo Expo
-    participant API as API Express
-    participant DB as Banco de dados
+    participant W as Aplicação web
+    participant SW as Service Worker
+    participant Q as Fila local
+    participant API as API
+    participant DB as Banco
 
-    U->>A: Informa e-mail e senha
-    A->>API: POST /api/auth/login
-    API->>DB: Buscar usuário por e-mail
-    DB-->>API: Usuário, hash, papel e status
-    API->>API: Validar senha e conta ativa
-    alt credenciais inválidas
-        API-->>A: 401 ou 403 + mensagem
-        A-->>U: Exibe erro
-    else credenciais válidas
-        API->>API: Gerar JWT com papel
-        API-->>A: Token e usuário
-        A->>A: Salvar token e modo de trabalho no SecureStore
-        A-->>U: Abrir agenda
-        opt acesso ao painel Admin
-            A->>API: GET /api/admin/users + Bearer token
-            API->>DB: Revalidar papel e status atuais
-            DB-->>API: Usuário administrador ativo
-            API-->>A: Lista de usuários
-        end
+    U->>W: Confirma uma alteração sem rede
+    W->>SW: Solicita persistência temporária
+    SW->>Q: Salvar operação + chave idempotente + versão base
+    Q-->>W: Estado pendente
+    W-->>U: Exibir aguardando sincronização
+    Note over SW,API: A conexão retorna
+    SW->>Q: Ler próxima operação
+    SW->>API: Enviar operação idempotente
+    API->>DB: Validar usuário, escopo e versão
+    alt versão compatível
+        DB-->>API: Alteração persistida
+        API-->>SW: 200/201 + nova versão
+        SW->>Q: Marcar como sincronizada
+        W-->>U: Exibir sincronizado
+    else conflito
+        API-->>SW: 409 + estado remoto
+        SW->>Q: Marcar conflito
+        W-->>U: Solicitar resolução consciente
     end
 ```
 
-## 7. Sequência - CRUD completo de clientes
+## 8. Sequência proposta - administração web
 
 ```mermaid
 sequenceDiagram
-    actor G as Gestor
-    participant APP as Aplicativo Expo
-    participant API as API Express
-    participant S as Serviço de clientes
-    participant DB as MySQL/PostgreSQL
+    actor A as Administrador
+    participant W as Painel web
+    participant API as API
+    participant DB as Banco
+    participant AUD as Auditoria
 
-    G->>APP: Cadastrar cliente
-    APP->>APP: Validar campos
-    APP->>API: POST /api/clients
-    API->>S: Criar cliente do usuário autenticado
-    S->>DB: INSERT
-    DB-->>S: Cliente persistido
-    S-->>API: DTO do cliente
-    API-->>APP: 201 Created
-    APP-->>G: Atualizar listagem
-
-    G->>APP: Editar cliente
-    APP->>API: PUT /api/clients/:id
-    API->>S: Validar propriedade e atualizar
-    S->>DB: UPDATE por id e userId
-    DB-->>APP: 200 OK via API
-
-    G->>APP: Excluir cliente
-    APP->>API: DELETE /api/clients/:id
-    API->>S: Validar propriedade e excluir
-    S->>DB: DELETE por id e userId
-    DB-->>APP: 200 OK via API
-    APP-->>G: Remover item da listagem
+    A->>W: Pesquisa um usuário
+    W->>API: GET /api/admin/users?search=...
+    API->>DB: Revalidar administrador ativo
+    DB-->>API: Papel e estado atuais
+    API->>DB: Consultar usuários filtrados
+    DB-->>API: Página de resultados
+    API-->>W: 200 + usuários
+    A->>W: Confirma alteração de papel ou estado
+    W->>API: PATCH /api/admin/users/:id
+    API->>DB: Validar alvo e regra de autoproteção
+    DB-->>API: Usuário atualizado
+    API->>AUD: Registrar ator, alvo e alteração
+    API-->>W: 200 + estado atualizado
+    W-->>A: Atualizar linha e informar sucesso
 ```
 
-## 8. Rastreabilidade dos diagramas
+## 9. Rastreabilidade da proposta
 
-| Exigência | Diagramas apresentados |
-| --- | --- |
-| Diagrama entidade-relacionamento | Seção 1 |
-| Dois casos de uso | Seções 2 e 3 |
-| Dois diagramas de atividades | Seções 4 e 5 |
-| Dois diagramas de sequência | Seções 6 e 7 |
+| Lacuna | Requisitos | Diagramas | Entrega planejada |
+| --- | --- | --- | --- |
+| Calendário sem interação contextual | RFF01-RFF05 | 3 e 5 | PR 1 |
+| Ausência de lembretes | RFF06-RFF09 | 2, 4 e 6 | PRs 3 e 4 |
+| Dependência integral de conexão | RFF10-RFF13 | 1, 3 e 7 | PRs 5 e 6 |
+| Ausência de administração web | RFF14-RFF17 | 4 e 8 | PR 2 |
+
+## 10. Evidência exigida para considerar uma proposta concluída
+
+Uma proposta só muda de `Planejada` para `Concluída` quando possuir código integrado, testes automatizados, validação manual no ambiente correspondente e atualização desta rastreabilidade. O diagrama isoladamente comprova apenas análise e projeto.
