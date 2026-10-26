@@ -12,15 +12,20 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ApiError, resolveApiAsset } from "../../../shared/api/client";
+import { ApiError } from "../../../shared/api/client";
+import { Button } from "../../../shared/components/ui/Button";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { FormField } from "../../../shared/components/ui/FormField";
+import { InlineError } from "../../../shared/components/ui/FeedbackState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts, type AppColors } from "../../../theme/tokens";
-import { uploadAvatar } from "../../auth/api/auth-api";
+import { useAvatar } from "../../../shared/media/use-avatar";
+import { avatars, saveLocalAvatar } from "../../../shared/media/avatar-service";
+import { avatarChanged } from "../../../shared/media/avatar-events";
 import { useAuth } from "../../auth/AuthProvider";
 import { updateProfile } from "../api/profile-api";
 
@@ -44,7 +49,8 @@ const passwordRequirements = (password: string) => [
   { label: "Um caractere especial", met: /[^A-Za-z0-9]/.test(password) },
 ];
 
-const errorMessage = (error: unknown, fallback: string) => error instanceof ApiError ? error.message : fallback;
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof ApiError || error instanceof Error ? error.message : fallback;
 
 export function ProfileEditorModal({ visible, onClose }: ModalProps) {
   const { colors } = useAppTheme();
@@ -54,7 +60,8 @@ export function ProfileEditorModal({ visible, onClose }: ModalProps) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const avatarUri = resolveApiAsset(user.avatarUrl);
+  const avatar = useAvatar(user.id, user.avatarUrl);
+  const avatarUri = avatar.uri;
 
   useEffect(() => {
     if (!visible) return;
@@ -81,8 +88,8 @@ export function ProfileEditorModal({ visible, onClose }: ModalProps) {
     setUploading(true);
     setError("");
     try {
-      const response = await uploadAvatar(token, result.assets[0].uri, result.assets[0].mimeType);
-      await setUser({ ...user, ...response.user });
+      const selectedAsset = result.assets[0];
+      await saveLocalAvatar(token, selectedAsset.uri, { width: selectedAsset.width, height: selectedAsset.height });
     } catch (uploadError) {
       setError(errorMessage(uploadError, "Não foi possível atualizar sua foto."));
     } finally {
@@ -115,7 +122,7 @@ export function ProfileEditorModal({ visible, onClose }: ModalProps) {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
         <SheetHeader title="Editar perfil" onClose={onClose} colors={colors} />
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <ScrollView key={visible ? "open" : "closed"} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             <View style={styles.avatarSection}>
               <Pressable
                 accessibilityLabel="Alterar foto do perfil"
@@ -130,20 +137,23 @@ export function ProfileEditorModal({ visible, onClose }: ModalProps) {
               </Pressable>
               <Text style={[styles.avatarTitle, { color: colors.text }]}>Foto do perfil</Text>
               <Text style={[styles.helper, { color: colors.textMuted }]}>Toque na foto para escolher uma imagem.</Text>
+              {avatar.pending && <>
+                <Text accessibilityLiveRegion="polite" style={[styles.helper, { color: colors.amber }]}>Foto salva neste aparelho. Envio pendente.</Text>
+                <Button label="Tentar enviar foto" size="small" variant="secondary" onPress={async () => { await avatars.retry(user.id); avatarChanged(); }} />
+              </>}
             </View>
 
-            <ProfileField colors={colors} label="Nome" value={name} onChangeText={setName} autoCapitalize="words" maxLength={120} />
-            <ProfileField colors={colors} label="E-mail" value={user.email} editable={false} />
-            <ProfileField colors={colors} label="CPF" value={cpf} onChangeText={(value) => setCpf(formatCpf(value))} keyboardType="number-pad" maxLength={14} />
-            {!!error && <InlineError message={error} colors={colors} />}
+            <FormField label="Nome" value={name} onChangeText={setName} autoCapitalize="words" maxLength={120} editable={!saving} />
+            <FormField label="E-mail" value={user.email} editable={false} />
+            <FormField label="CPF" value={cpf} onChangeText={(value) => setCpf(formatCpf(value))} keyboardType="number-pad" maxLength={14} editable={!saving} />
+            {!!error && <InlineError message={error} />}
 
-            <Pressable
+            <Button
+              label="Salvar alterações"
+              loading={saving}
               disabled={saving || uploading}
               onPress={save}
-              style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.accent, opacity: saving || uploading ? 0.5 : pressed ? 0.86 : 1 }]}
-            >
-              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Salvar alterações</Text>}
-            </Pressable>
+            />
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -157,7 +167,6 @@ export function SecurityModal({ visible, onClose }: ModalProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const [showPasswords, setShowPasswords] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -166,7 +175,6 @@ export function SecurityModal({ visible, onClose }: ModalProps) {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmation("");
-    setShowPasswords(false);
     setError("");
   }, [visible]);
 
@@ -202,7 +210,7 @@ export function SecurityModal({ visible, onClose }: ModalProps) {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
         <SheetHeader title="Segurança" onClose={onClose} colors={colors} />
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <ScrollView key={visible ? "open" : "closed"} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             <View style={[styles.securityIntro, { backgroundColor: colors.accentSoft }]}>
               <Ionicons name="shield-checkmark-outline" size={24} color={colors.accent} />
               <View style={styles.flex}>
@@ -211,20 +219,18 @@ export function SecurityModal({ visible, onClose }: ModalProps) {
               </View>
             </View>
 
-            <PasswordField colors={colors} label="Senha atual" value={currentPassword} onChangeText={setCurrentPassword} visible={showPasswords} onToggle={() => setShowPasswords((current) => !current)} />
-            <PasswordField colors={colors} label="Nova senha" value={newPassword} onChangeText={setNewPassword} visible={showPasswords} onToggle={() => setShowPasswords((current) => !current)} />
+            <FormField label="Senha atual" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry maxLength={72} editable={!saving} />
+            <FormField label="Nova senha" value={newPassword} onChangeText={setNewPassword} secureTextEntry maxLength={72} editable={!saving} />
             <PasswordChecklist colors={colors} requirements={requirements} />
-            <PasswordField colors={colors} label="Confirmar nova senha" value={confirmation} onChangeText={setConfirmation} visible={showPasswords} onToggle={() => setShowPasswords((current) => !current)} />
-            {confirmation.length > 0 && !passwordsMatch ? <InlineError message="As senhas não coincidem." colors={colors} /> : null}
-            {!!error && <InlineError message={error} colors={colors} />}
+            <FormField label="Confirmar nova senha" value={confirmation} onChangeText={setConfirmation} secureTextEntry maxLength={72} editable={!saving} error={confirmation.length > 0 && !passwordsMatch ? "As senhas não coincidem." : undefined} />
+            {!!error && <InlineError message={error} />}
 
-            <Pressable
+            <Button
+              label="Alterar senha"
+              loading={saving}
               disabled={!canSave}
               onPress={save}
-              style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.accent, opacity: canSave ? (pressed ? 0.86 : 1) : 0.5 }]}
-            >
-              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Alterar senha</Text>}
-            </Pressable>
+            />
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -248,9 +254,7 @@ export function NotificationsPendingModal({ visible, onClose }: ModalProps) {
           </View>
           <Text style={[styles.pendingTitle, { color: colors.text }]}>Estamos preparando seus lembretes</Text>
           <Text style={[styles.pendingDescription, { color: colors.textMuted }]}>Em breve você poderá escolher alertas para compromissos pessoais e agendamentos da equipe.</Text>
-          <Pressable onPress={onClose} style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.surface, opacity: pressed ? 0.8 : 1 }]}>
-            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Entendi</Text>
-          </Pressable>
+          <Button label="Entendi" variant="secondary" onPress={onClose} />
         </View>
       </SafeAreaView>
     </Modal>
@@ -264,48 +268,7 @@ function SheetHeader({ title, onClose, colors }: { title: string; onClose: () =>
         <Text style={[styles.eyebrow, { color: colors.accent }]}>MINHA CONTA</Text>
         <Text style={[styles.sheetTitle, { color: colors.text }]}>{title}</Text>
       </View>
-      <Pressable accessibilityLabel="Fechar" onPress={onClose} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.72 : 1 }]}>
-        <Ionicons name="close" size={22} color={colors.text} />
-      </Pressable>
-    </View>
-  );
-}
-
-function ProfileField({ colors, label, editable = true, ...props }: { colors: AppColors; label: string; editable?: boolean } & React.ComponentProps<typeof TextInput>) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
-      <TextInput
-        editable={editable}
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, { color: editable ? colors.text : colors.textMuted, backgroundColor: editable ? colors.surface : colors.surfaceRaised, borderColor: colors.border }]}
-        {...props}
-      />
-    </View>
-  );
-}
-
-function PasswordField({ colors, label, value, onChangeText, visible, onToggle }: { colors: AppColors; label: string; value: string; onChangeText: (value: string) => void; visible: boolean; onToggle: () => void }) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
-      <View style={[styles.passwordInput, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={72}
-          onChangeText={onChangeText}
-          placeholder="Digite sua senha"
-          placeholderTextColor={colors.textMuted}
-          secureTextEntry={!visible}
-          style={[styles.passwordTextInput, { color: colors.text }]}
-          value={value}
-        />
-        <Pressable accessibilityLabel={visible ? "Ocultar senhas" : "Mostrar senhas"} onPress={onToggle} hitSlop={10}>
-          <Ionicons name={visible ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
-        </Pressable>
-      </View>
+      <IconButton accessibilityLabel="Fechar" icon="close" onPress={onClose} />
     </View>
   );
 }
@@ -323,22 +286,12 @@ function PasswordChecklist({ colors, requirements }: { colors: AppColors; requir
   );
 }
 
-function InlineError({ message, colors }: { message: string; colors: AppColors }) {
-  return (
-    <View style={[styles.errorBox, { backgroundColor: `${colors.danger}14`, borderColor: `${colors.danger}50` }]}>
-      <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
-      <Text style={[styles.errorText, { color: colors.danger }]}>{message}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   flex: { flex: 1 },
   sheetHeader: { minHeight: 82, borderBottomWidth: 1, paddingHorizontal: 22, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   eyebrow: { fontFamily: fonts.bodyBold, fontSize: 10, marginBottom: 3 },
   sheetTitle: { fontFamily: fonts.displayBold, fontSize: 28 },
-  closeButton: { width: 42, height: 42, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   content: { padding: 22, paddingBottom: 44, gap: 18 },
   avatarSection: { alignItems: "center", marginBottom: 4 },
   avatarButton: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center", marginBottom: 12 },
@@ -347,26 +300,15 @@ const styles = StyleSheet.create({
   cameraBadge: { position: "absolute", right: -1, bottom: 2, width: 30, height: 30, borderRadius: 15, borderWidth: 3, alignItems: "center", justifyContent: "center" },
   avatarTitle: { fontFamily: fonts.bodyBold, fontSize: 15, marginBottom: 3 },
   helper: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18 },
-  field: { gap: 7 },
-  fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 13 },
-  input: { minHeight: 52, borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, fontFamily: fonts.body, fontSize: 14 },
-  passwordInput: { minHeight: 52, borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10 },
-  passwordTextInput: { flex: 1, minHeight: 50, fontFamily: fonts.body, fontSize: 14 },
-  primaryButton: { minHeight: 54, borderRadius: 8, alignItems: "center", justifyContent: "center", marginTop: 4 },
-  primaryButtonText: { color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 15 },
   securityIntro: { borderRadius: 8, padding: 15, flexDirection: "row", gap: 12, alignItems: "center" },
   securityTitle: { fontFamily: fonts.bodyBold, fontSize: 14, marginBottom: 2 },
   checklist: { borderWidth: 1, borderRadius: 8, padding: 13, gap: 8 },
   requirement: { flexDirection: "row", alignItems: "center", gap: 8 },
   requirementText: { fontFamily: fonts.bodyMedium, fontSize: 12 },
-  errorBox: { borderWidth: 1, borderRadius: 8, padding: 12, flexDirection: "row", alignItems: "center", gap: 9 },
-  errorText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 17 },
   pendingContent: { flex: 1, paddingHorizontal: 30, alignItems: "center", justifyContent: "center" },
   pendingIcon: { width: 76, height: 76, borderRadius: 38, alignItems: "center", justifyContent: "center", marginBottom: 20 },
   pendingBadge: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 14 },
   pendingBadgeText: { fontFamily: fonts.bodyBold, fontSize: 10 },
   pendingTitle: { fontFamily: fonts.displayBold, fontSize: 28, textAlign: "center", marginBottom: 10 },
   pendingDescription: { maxWidth: 330, fontFamily: fonts.body, fontSize: 14, lineHeight: 21, textAlign: "center", marginBottom: 28 },
-  secondaryButton: { minWidth: 150, minHeight: 50, borderWidth: 1, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  secondaryButtonText: { fontFamily: fonts.bodyBold, fontSize: 14 },
 });

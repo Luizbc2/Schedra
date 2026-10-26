@@ -1,15 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ApiError } from "../../../shared/api/client";
 import { AppHeader } from "../../../shared/components/AppHeader";
 import { Screen } from "../../../shared/components/Screen";
+import { LocalDataHint } from "../../../shared/components/LocalDataHint";
+import { useCatalogList } from "../hooks/useCatalogList";
+import { Button } from "../../../shared/components/ui/Button";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { FormField } from "../../../shared/components/ui/FormField";
+import { FeedbackState, InlineError } from "../../../shared/components/ui/FeedbackState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts } from "../../../theme/tokens";
 import { useAuth } from "../../auth/AuthProvider";
 import { servicesApi, type Service, type ServiceInput } from "../api/services-api";
-import { CatalogEditor, CatalogEditorField } from "../components/CatalogEditor";
+import { CatalogEditor } from "../components/CatalogEditor";
 
 type ServiceForm = { name: string; category: string; durationMinutes: string; price: string; description: string };
 
@@ -19,28 +25,8 @@ const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "
 export function ServicesScreen() {
   const { colors } = useAppTheme();
   const { token } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { items: services, search, setSearch, loading, error, localResult, load } = useCatalogList(servicesApi.list, token);
   const [editor, setEditor] = useState<Service | null | undefined>(undefined);
-
-  const load = useCallback(async (query: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      setServices((await servicesApi.list(token, query)).data);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar os serviços.");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => void load(search), 350);
-    return () => clearTimeout(timeout);
-  }, [load, search]);
 
   const emptyTitle = search ? "Nenhum resultado" : "Seu catálogo está vazio";
   const emptyDetail = search ? "Tente buscar com outro termo." : "Cadastre o primeiro serviço para começar.";
@@ -48,7 +34,7 @@ export function ServicesScreen() {
   return (
     <Screen
       header={<AppHeader eyebrow="OPERAÇÃO" title="Serviços" />}
-      floatingAction={<Pressable accessibilityLabel="Novo serviço" onPress={() => setEditor(null)} style={[styles.fab, { backgroundColor: colors.accent }]}><Ionicons name="add" color="#FFF" size={28} /></Pressable>}
+      floatingAction={<IconButton accessibilityLabel="Novo serviço" icon="add" variant="primary" size="large" onPress={() => setEditor(null)} style={styles.fab} />}
     >
       <View>
         <Text style={[styles.kicker, { color: colors.accent }]}>CATÁLOGO</Text>
@@ -59,23 +45,19 @@ export function ServicesScreen() {
       <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Ionicons name="search" size={20} color={colors.textMuted} />
         <TextInput accessibilityLabel="Buscar serviços" autoCapitalize="words" onChangeText={setSearch} placeholder="Buscar por nome ou categoria" placeholderTextColor={colors.textMuted} style={[styles.searchInput, { color: colors.text }]} value={search} />
-        {search ? <Pressable accessibilityLabel="Limpar busca" onPress={() => setSearch("")}><Ionicons name="close-circle" size={19} color={colors.textMuted} /></Pressable> : null}
+        {search ? <IconButton accessibilityLabel="Limpar busca" icon="close-circle" variant="ghost" onPress={() => setSearch("")} /> : null}
       </View>
 
+      <LocalDataHint result={localResult} />
       <View style={styles.resultHeader}>
         <Text style={[styles.resultCount, { color: colors.textMuted }]}>{services.length} {services.length === 1 ? "serviço" : "serviços"}</Text>
-        <Pressable accessibilityLabel="Recarregar serviços" onPress={() => void load(search)}><Ionicons name="refresh" size={20} color={colors.textMuted} /></Pressable>
+        <IconButton accessibilityLabel="Recarregar serviços" icon="refresh" variant="ghost" loading={loading} onPress={() => void load(search)} />
       </View>
 
-      {loading ? <ActivityIndicator style={styles.loader} color={colors.accent} /> : error || services.length === 0 ? (
-        <View style={[styles.feedback, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name={error ? "cloud-offline-outline" : "cut-outline"} size={30} color={colors.textMuted} />
-          <Text style={[styles.feedbackTitle, { color: colors.text }]}>{error ? "Falha ao carregar" : emptyTitle}</Text>
-          <Text style={[styles.feedbackDetail, { color: colors.textMuted }]}>{error || emptyDetail}</Text>
-          <Pressable onPress={() => error ? void load(search) : search ? setSearch("") : setEditor(null)} style={[styles.secondaryButton, { borderColor: colors.accent }]}>
-            <Text style={[styles.secondaryText, { color: colors.accent }]}>{error ? "Tentar novamente" : search ? "Limpar busca" : "Cadastrar serviço"}</Text>
-          </Pressable>
-        </View>
+      {loading ? <FeedbackState kind="loading" title="Carregando serviços" /> : error || services.length === 0 ? (
+        <FeedbackState kind={error ? "error" : "empty"} icon={error ? "cloud-offline-outline" : "cut-outline"}
+          title={error ? "Falha ao carregar" : emptyTitle} detail={error || emptyDetail}
+          action={{ label: error ? "Tentar novamente" : search ? "Limpar busca" : "Cadastrar serviço", onPress: () => error ? void load(search) : search ? setSearch("") : setEditor(null) }} />
       ) : (
         <View style={styles.list}>
           {services.map((service) => (
@@ -101,7 +83,6 @@ export function ServicesScreen() {
 }
 
 function ServiceEditor({ service, onClose, onChanged }: { service: Service | null | undefined; onClose: () => void; onChanged: () => void }) {
-  const { colors } = useAppTheme();
   const { token } = useAuth();
   const [input, setInput] = useState<ServiceForm>(emptyService);
   const [saving, setSaving] = useState(false);
@@ -163,18 +144,18 @@ function ServiceEditor({ service, onClose, onChanged }: { service: Service | nul
   };
 
   return (
-    <CatalogEditor eyebrow={service ? "EDITAR SERVIÇO" : "NOVO SERVIÇO"} onClose={onClose} title={service?.name ?? "Cadastro"} visible={service !== undefined}>
-      <CatalogEditorField colors={colors} label="Nome" value={input.name} onChangeText={(name) => change({ name })} autoCapitalize="words" />
-      <CatalogEditorField colors={colors} label="Categoria" value={input.category} onChangeText={(category) => change({ category })} autoCapitalize="words" />
+    <CatalogEditor eyebrow={service ? "EDITAR SERVIÇO" : "NOVO SERVIÇO"} onClose={onClose} title={service?.name ?? "Cadastro"} visible={service !== undefined} busy={saving}>
+      <FormField label="Nome" value={input.name} onChangeText={(name) => change({ name })} autoCapitalize="words" editable={!saving} />
+      <FormField label="Categoria" value={input.category} onChangeText={(category) => change({ category })} autoCapitalize="words" editable={!saving} />
       <View style={styles.doubleField}>
-        <View style={styles.flexField}><CatalogEditorField colors={colors} label="Duração (min)" value={input.durationMinutes} onChangeText={(durationMinutes) => change({ durationMinutes: durationMinutes.replace(/\D/g, "") })} keyboardType="number-pad" /></View>
-        <View style={styles.flexField}><CatalogEditorField colors={colors} label="Preço (R$)" value={input.price} onChangeText={(price) => change({ price: sanitizePrice(price) })} keyboardType="decimal-pad" /></View>
+        <FormField containerStyle={styles.flexField} label="Duração (min)" value={input.durationMinutes} onChangeText={(durationMinutes) => change({ durationMinutes: durationMinutes.replace(/\D/g, "") })} keyboardType="number-pad" editable={!saving} />
+        <FormField containerStyle={styles.flexField} label="Preço (R$)" value={input.price} onChangeText={(price) => change({ price: sanitizePrice(price) })} keyboardType="decimal-pad" editable={!saving} />
       </View>
-      <CatalogEditorField colors={colors} label="Descrição (opcional)" value={input.description} onChangeText={(description) => change({ description })} multiline />
+      <FormField label="Descrição (opcional)" value={input.description} onChangeText={(description) => change({ description })} multiline editable={!saving} />
 
-      {formError ? <View style={[styles.errorBox, { backgroundColor: colors.accentSoft }]}><Ionicons name="alert-circle-outline" size={18} color={colors.danger} /><Text style={[styles.errorText, { color: colors.danger }]}>{formError}</Text></View> : null}
-      <Pressable disabled={saving} onPress={() => void save()} style={[styles.saveButton, { backgroundColor: colors.accent, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{service ? "Salvar alterações" : "Cadastrar serviço"}</Text>}</Pressable>
-      {service ? <Pressable disabled={saving} onPress={remove} style={[styles.deleteButton, { borderColor: colors.danger }]}><Ionicons name="trash-outline" size={18} color={colors.danger} /><Text style={[styles.deleteText, { color: colors.danger }]}>Excluir serviço</Text></Pressable> : null}
+      {formError ? <InlineError message={formError} /> : null}
+      <Button loading={saving} onPress={save} label={service ? "Salvar alterações" : "Cadastrar serviço"} />
+      {service ? <Button disabled={saving} onPress={remove} variant="destructive" icon="trash-outline" label="Excluir serviço" /> : null}
     </CatalogEditor>
   );
 }
@@ -215,7 +196,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 14 },
   resultHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   resultCount: { fontFamily: fonts.bodyBold, fontSize: 12 },
-  loader: { marginVertical: 42 },
   list: { gap: 9 },
   card: { minHeight: 96, borderWidth: 1, borderRadius: 10, padding: 13, flexDirection: "row", alignItems: "center", gap: 12 },
   serviceIcon: { width: 46, height: 46, borderRadius: 10, alignItems: "center", justifyContent: "center" },
@@ -225,18 +205,7 @@ const styles = StyleSheet.create({
   metaLine: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 5 },
   metaChip: { borderRadius: 5, paddingHorizontal: 7, paddingVertical: 4, flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontFamily: fonts.bodyMedium, fontSize: 10 },
-  feedback: { alignItems: "center", borderWidth: 1, borderRadius: 12, padding: 28, gap: 8 },
-  feedbackTitle: { fontFamily: fonts.display, fontSize: 22, marginTop: 3 },
-  feedbackDetail: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, textAlign: "center" },
-  secondaryButton: { minHeight: 42, borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", marginTop: 7 },
-  secondaryText: { fontFamily: fonts.bodyBold, fontSize: 13 },
   fab: { position: "absolute", right: 22, bottom: 18, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", elevation: 7 },
   doubleField: { flexDirection: "row", gap: 10 },
   flexField: { flex: 1, minWidth: 0 },
-  errorBox: { borderRadius: 8, padding: 11, flexDirection: "row", alignItems: "center", gap: 8 },
-  errorText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 17 },
-  saveButton: { minHeight: 52, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  saveText: { color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 15 },
-  deleteButton: { minHeight: 48, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
-  deleteText: { fontFamily: fonts.bodyBold, fontSize: 14 },
 });

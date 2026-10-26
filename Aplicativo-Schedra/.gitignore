@@ -9,6 +9,7 @@ dist/
 dist-web/
 dist-rubrica/
 dist-review/
+dist-controls-check/
 dist-native/
 web-build/
 expo-env.d.ts

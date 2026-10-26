@@ -1,43 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ApiError } from "../../../shared/api/client";
 import { AppHeader } from "../../../shared/components/AppHeader";
 import { Screen } from "../../../shared/components/Screen";
+import { LocalDataHint } from "../../../shared/components/LocalDataHint";
+import { useCatalogList } from "../hooks/useCatalogList";
+import { Button } from "../../../shared/components/ui/Button";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { FormField } from "../../../shared/components/ui/FormField";
+import { FeedbackState, InlineError } from "../../../shared/components/ui/FeedbackState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts } from "../../../theme/tokens";
 import { useAuth } from "../../auth/AuthProvider";
 import { professionalsApi, type Professional, type ProfessionalInput, type ProfessionalStatus } from "../api/professionals-api";
-import { CatalogEditor, CatalogEditorField } from "../components/CatalogEditor";
+import { CatalogEditor } from "../components/CatalogEditor";
 
 const emptyProfessional: ProfessionalInput = { name: "", email: "", phone: "", specialty: "", status: "ativo" };
 
 export function ProfessionalsScreen() {
   const { colors } = useAppTheme();
   const { token } = useAuth();
-  const [professionals, setProfessionals] = useState<Professional[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { items: professionals, search, setSearch, loading, error, localResult, load } = useCatalogList(professionalsApi.list, token);
   const [editor, setEditor] = useState<Professional | null | undefined>(undefined);
-
-  const load = useCallback(async (query: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      setProfessionals((await professionalsApi.list(token, query)).data);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar os profissionais.");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => void load(search), 350);
-    return () => clearTimeout(timeout);
-  }, [load, search]);
 
   const emptyTitle = search ? "Nenhum resultado" : "Sua equipe está vazia";
   const emptyDetail = search ? "Tente buscar com outro termo." : "Cadastre o primeiro profissional para começar.";
@@ -45,7 +31,7 @@ export function ProfessionalsScreen() {
   return (
     <Screen
       header={<AppHeader eyebrow="OPERAÇÃO" title="Profissionais" />}
-      floatingAction={<Pressable accessibilityLabel="Novo profissional" onPress={() => setEditor(null)} style={[styles.fab, { backgroundColor: colors.accent }]}><Ionicons name="person-add-outline" color="#FFF" size={23} /></Pressable>}
+      floatingAction={<IconButton accessibilityLabel="Novo profissional" icon="person-add-outline" variant="primary" size="large" onPress={() => setEditor(null)} style={styles.fab} />}
     >
       <View>
         <Text style={[styles.kicker, { color: colors.accent }]}>EQUIPE</Text>
@@ -56,23 +42,19 @@ export function ProfessionalsScreen() {
       <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Ionicons name="search" size={20} color={colors.textMuted} />
         <TextInput accessibilityLabel="Buscar profissionais" autoCapitalize="words" onChangeText={setSearch} placeholder="Buscar por nome ou especialidade" placeholderTextColor={colors.textMuted} style={[styles.searchInput, { color: colors.text }]} value={search} />
-        {search ? <Pressable accessibilityLabel="Limpar busca" onPress={() => setSearch("")}><Ionicons name="close-circle" size={19} color={colors.textMuted} /></Pressable> : null}
+        {search ? <IconButton accessibilityLabel="Limpar busca" icon="close-circle" variant="ghost" onPress={() => setSearch("")} /> : null}
       </View>
 
+      <LocalDataHint result={localResult} />
       <View style={styles.resultHeader}>
         <Text style={[styles.resultCount, { color: colors.textMuted }]}>{professionals.length} {professionals.length === 1 ? "profissional" : "profissionais"}</Text>
-        <Pressable accessibilityLabel="Recarregar profissionais" onPress={() => void load(search)}><Ionicons name="refresh" size={20} color={colors.textMuted} /></Pressable>
+        <IconButton accessibilityLabel="Recarregar profissionais" icon="refresh" variant="ghost" loading={loading} onPress={() => void load(search)} />
       </View>
 
-      {loading ? <ActivityIndicator style={styles.loader} color={colors.accent} /> : error || professionals.length === 0 ? (
-        <View style={[styles.feedback, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name={error ? "cloud-offline-outline" : "briefcase-outline"} size={30} color={colors.textMuted} />
-          <Text style={[styles.feedbackTitle, { color: colors.text }]}>{error ? "Falha ao carregar" : emptyTitle}</Text>
-          <Text style={[styles.feedbackDetail, { color: colors.textMuted }]}>{error || emptyDetail}</Text>
-          <Pressable onPress={() => error ? void load(search) : search ? setSearch("") : setEditor(null)} style={[styles.secondaryButton, { borderColor: colors.accent }]}>
-            <Text style={[styles.secondaryText, { color: colors.accent }]}>{error ? "Tentar novamente" : search ? "Limpar busca" : "Cadastrar profissional"}</Text>
-          </Pressable>
-        </View>
+      {loading ? <FeedbackState kind="loading" title="Carregando profissionais" /> : error || professionals.length === 0 ? (
+        <FeedbackState kind={error ? "error" : "empty"} icon={error ? "cloud-offline-outline" : "briefcase-outline"}
+          title={error ? "Falha ao carregar" : emptyTitle} detail={error || emptyDetail}
+          action={{ label: error ? "Tentar novamente" : search ? "Limpar busca" : "Cadastrar profissional", onPress: () => error ? void load(search) : search ? setSearch("") : setEditor(null) }} />
       ) : (
         <View style={styles.list}>
           {professionals.map((professional) => (
@@ -155,11 +137,11 @@ function ProfessionalEditor({ professional, onClose, onChanged }: { professional
   };
 
   return (
-    <CatalogEditor eyebrow={professional ? "EDITAR PROFISSIONAL" : "NOVO PROFISSIONAL"} onClose={onClose} title={professional?.name ?? "Cadastro"} visible={professional !== undefined}>
-      <CatalogEditorField colors={colors} label="Nome" value={input.name} onChangeText={(name) => change({ name })} autoCapitalize="words" />
-      <CatalogEditorField colors={colors} label="E-mail" value={input.email} onChangeText={(email) => change({ email })} autoCapitalize="none" keyboardType="email-address" />
-      <CatalogEditorField colors={colors} label="Telefone" value={input.phone} onChangeText={(phone) => change({ phone })} keyboardType="phone-pad" />
-      <CatalogEditorField colors={colors} label="Especialidade" value={input.specialty} onChangeText={(specialty) => change({ specialty })} autoCapitalize="words" />
+    <CatalogEditor eyebrow={professional ? "EDITAR PROFISSIONAL" : "NOVO PROFISSIONAL"} onClose={onClose} title={professional?.name ?? "Cadastro"} visible={professional !== undefined} busy={saving}>
+      <FormField label="Nome" value={input.name} onChangeText={(name) => change({ name })} autoCapitalize="words" editable={!saving} />
+      <FormField label="E-mail" value={input.email} onChangeText={(email) => change({ email })} autoCapitalize="none" keyboardType="email-address" editable={!saving} />
+      <FormField label="Telefone" value={input.phone} onChangeText={(phone) => change({ phone })} keyboardType="phone-pad" editable={!saving} />
+      <FormField label="Especialidade" value={input.specialty} onChangeText={(specialty) => change({ specialty })} autoCapitalize="words" editable={!saving} />
 
       <View style={styles.fieldGroup}>
         <Text style={[styles.fieldLabel, { color: colors.text }]}>Status</Text>
@@ -171,9 +153,9 @@ function ProfessionalEditor({ professional, onClose, onChanged }: { professional
         </View>
       </View>
 
-      {formError ? <View style={[styles.errorBox, { backgroundColor: colors.accentSoft }]}><Ionicons name="alert-circle-outline" size={18} color={colors.danger} /><Text style={[styles.errorText, { color: colors.danger }]}>{formError}</Text></View> : null}
-      <Pressable disabled={saving} onPress={() => void save()} style={[styles.saveButton, { backgroundColor: colors.accent, opacity: saving ? 0.6 : 1 }]}>{saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveText}>{professional ? "Salvar alterações" : "Cadastrar profissional"}</Text>}</Pressable>
-      {professional ? <Pressable disabled={saving} onPress={remove} style={[styles.deleteButton, { borderColor: colors.danger }]}><Ionicons name="trash-outline" size={18} color={colors.danger} /><Text style={[styles.deleteText, { color: colors.danger }]}>Excluir profissional</Text></Pressable> : null}
+      {formError ? <InlineError message={formError} /> : null}
+      <Button loading={saving} onPress={save} label={professional ? "Salvar alterações" : "Cadastrar profissional"} />
+      {professional ? <Button disabled={saving} onPress={remove} variant="destructive" icon="trash-outline" label="Excluir profissional" /> : null}
     </CatalogEditor>
   );
 }
@@ -199,7 +181,6 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 14 },
   resultHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   resultCount: { fontFamily: fonts.bodyBold, fontSize: 12 },
-  loader: { marginVertical: 42 },
   list: { gap: 9 },
   card: { minHeight: 88, borderWidth: 1, borderRadius: 10, padding: 13, flexDirection: "row", alignItems: "center", gap: 12 },
   avatar: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
@@ -211,21 +192,10 @@ const styles = StyleSheet.create({
   detail: { fontFamily: fonts.body, fontSize: 11 },
   statusBadge: { borderRadius: 5, paddingHorizontal: 6, paddingVertical: 4 },
   statusText: { fontFamily: fonts.bodyBold, fontSize: 8 },
-  feedback: { alignItems: "center", borderWidth: 1, borderRadius: 12, padding: 28, gap: 8 },
-  feedbackTitle: { fontFamily: fonts.display, fontSize: 22, marginTop: 3 },
-  feedbackDetail: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, textAlign: "center" },
-  secondaryButton: { minHeight: 42, borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", marginTop: 7 },
-  secondaryText: { fontFamily: fonts.bodyBold, fontSize: 13 },
   fab: { position: "absolute", right: 22, bottom: 18, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", elevation: 7 },
   fieldGroup: { gap: 6 },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 13 },
   segment: { minHeight: 50, borderWidth: 1, borderRadius: 8, padding: 4, flexDirection: "row", gap: 4 },
   segmentButton: { flex: 1, borderWidth: 1, borderColor: "transparent", borderRadius: 6, alignItems: "center", justifyContent: "center" },
   segmentText: { fontFamily: fonts.bodyBold, fontSize: 13 },
-  errorBox: { borderRadius: 8, padding: 11, flexDirection: "row", alignItems: "center", gap: 8 },
-  errorText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 17 },
-  saveButton: { minHeight: 52, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  saveText: { color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 15 },
-  deleteButton: { minHeight: 48, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
-  deleteText: { fontFamily: fonts.bodyBold, fontSize: 14 },
 });

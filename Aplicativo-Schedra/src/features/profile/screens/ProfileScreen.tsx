@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppHeader } from "../../../shared/components/AppHeader";
 import { Screen } from "../../../shared/components/Screen";
 import { ThemeModeSwitch } from "../../../shared/components/ThemeModeSwitch";
+import { Button } from "../../../shared/components/ui/Button";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts } from "../../../theme/tokens";
-import { resolveApiAsset } from "../../../shared/api/client";
+import { useAvatar } from "../../../shared/media/use-avatar";
 import { useAuth } from "../../auth/AuthProvider";
 import { NotificationsPendingModal, ProfileEditorModal, SecurityModal } from "../components/ProfileModals";
 
@@ -17,7 +18,8 @@ export function ProfileScreen({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const { colors } = useAppTheme();
   const { signOut, user, workspaceMode } = useAuth();
   const [activeModal, setActiveModal] = useState<ProfileModal>(null);
-  const avatarUri = resolveApiAsset(user.avatarUrl);
+  const [signingOut, setSigningOut] = useState(false);
+  const avatarUri = useAvatar(user.id, user.avatarUrl).uri;
   const actions: Array<{ icon: keyof typeof Ionicons.glyphMap; label: string; description: string; modal: Exclude<ProfileModal, null>; pending?: boolean }> = [
     { icon: "person-outline", label: "Editar perfil", description: "Foto, nome e CPF", modal: "profile" },
     { icon: "notifications-outline", label: "Notificações", description: "Lembretes e alertas", modal: "notifications", pending: true },
@@ -86,10 +88,12 @@ export function ProfileScreen({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
         </>
       ) : null}
 
-      <Pressable onPress={signOut} style={[styles.exitButton, { borderColor: colors.danger, backgroundColor: `${colors.danger}14` }]}>
-        <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-        <Text style={[styles.exitText, { color: colors.danger }]}>Sair da conta</Text>
-      </Pressable>
+      <Button label="Sair da conta" icon="log-out-outline" variant="destructive" loading={signingOut} onPress={async () => {
+        setSigningOut(true);
+        try { await signOut(); }
+        catch { Alert.alert("Sair da conta", "Nao foi possivel concluir a limpeza da sessao neste aparelho. Tente novamente."); }
+        finally { setSigningOut(false); }
+      }} />
 
       <ProfileEditorModal visible={activeModal === "profile"} onClose={() => setActiveModal(null)} />
       <NotificationsPendingModal visible={activeModal === "notifications"} onClose={() => setActiveModal(null)} />
@@ -118,6 +122,4 @@ const styles = StyleSheet.create({
   adminIcon: { width: 42, height: 42, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   pendingBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5 },
   pendingText: { fontFamily: fonts.bodyBold, fontSize: 9 },
-  exitButton: { minHeight: 52, borderWidth: 1, borderRadius: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9 },
-  exitText: { fontFamily: fonts.bodyBold, fontSize: 14 },
 });

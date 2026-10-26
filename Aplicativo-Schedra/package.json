@@ -12,10 +12,16 @@
     "@react-navigation/bottom-tabs": "^7.18.16",
     "@react-navigation/native": "^7.3.16",
     "@react-navigation/native-stack": "^7.18.8",
+    "base64-js": "^1.5.1",
     "expo": "~57.0.19",
+    "expo-crypto": "~57.0.2",
+    "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.3",
+    "expo-image-manipulator": "~57.0.19",
     "expo-image-picker": "~57.0.15",
+    "expo-network": "~57.0.1",
     "expo-secure-store": "~57.0.3",
+    "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -25,8 +31,12 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.0",
     "@types/react": "~19.2.4",
-    "typescript": "~6.0.3"
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^26.1.0",
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
   },
   "scripts": {
     "start": "expo start",
@@ -35,7 +45,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "npm run test:unit && npm run test:ui && npm run test:data",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:ui": "vitest run",
+    "test:data": "vitest run --config vitest.data.config.mts",
+    "docs:local-db": "node --experimental-strip-types scripts/export-local-der.mjs"
   },
   "private": true
 }

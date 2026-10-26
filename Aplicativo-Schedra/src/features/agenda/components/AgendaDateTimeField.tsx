@@ -22,6 +22,7 @@ export function AgendaDateTimeField({
       <DateTimePicker
         value={value}
         mode="datetime"
+        minimumDate={new Date()}
         onValueChange={(_event, date) => onChange(date)}
       />
     );
@@ -31,6 +32,7 @@ export function AgendaDateTimeField({
       value,
       mode,
       is24Hour: true,
+      minimumDate: mode === "date" ? new Date() : undefined,
       onValueChange: (_event, date) =>
         onChange(mergeDatePart(value, date, mode)),
     });

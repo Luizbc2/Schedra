@@ -9,6 +9,7 @@ import { CatalogScreen } from "../features/catalog/screens/CatalogScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { AdminUsersScreen } from "../features/admin/screens/AdminUsersScreen";
 import { useAppTheme } from "../theme/ThemeProvider";
+import { FeedbackState } from "../shared/components/ui/FeedbackState";
 import { AnimatedTabBar } from "./AnimatedTabBar";
 import type { MainTabParamList, MoreStackParamList, RootStackParamList } from "./types";
 
@@ -51,10 +52,11 @@ function MainTabs() {
 }
 
 export function RootNavigator() {
-  const { loading, modeTransition, token } = useAuth();
+  const { loading, modeTransition, token, startupError, retryStartup } = useAuth();
   const { colors } = useAppTheme();
 
   if (loading) return <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}><ActivityIndicator color={colors.accent} /></View>;
+  if (startupError) return <View style={{ flex: 1, justifyContent: "center", backgroundColor: colors.background }}><FeedbackState kind="error" title="Dados locais indisponiveis" detail={startupError} action={{ label: "Tentar novamente", onPress: retryStartup }} /></View>;
 
   const rotateY = modeTransition.interpolate({
     inputRange: [-1, 0, 1],
