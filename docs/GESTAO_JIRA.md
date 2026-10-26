@@ -125,7 +125,9 @@ Não foram inventados PRs, entrevistas, reuniões, cerimônias, aprovações ou 
 
 SQLite, adaptador web, escopos, migracao de sessao, consultas locais e fotos BLOB com fila de envio foram implementados. Evidencias, caminhos e limites estao em [SQLITE_LOCAL.md](SQLITE_LOCAL.md); o DER local foi derivado do SQL real. [PR #42](https://github.com/Luizbc2/Schedra/pull/42) em rascunho para dev, precedido do [alinhamento de base #41](https://github.com/Luizbc2/Schedra/pull/41). Ainda faltam CRUD de negocio offline, revisao e verificacao em aparelhos; main e producao permanecem sem este incremento.
 
-A consulta inicial aos tickets SCHED-20 a SCHED-24 funcionou. As chamadas seguintes para atualizacao e releitura pelo conector excederam o tempo de espera; o estado remoto dessas tarefas precisa ser reconciliado. Este registro local nao afirma que o Jira foi atualizado nem que os aceites foram concluidos.
+A consulta inicial aos tickets SCHED-20 a SCHED-24 funcionou. As chamadas seguintes pelo conector excederam o tempo de espera. A reconciliacao foi feita pela interface do Jira no Chrome: as cinco historias estao em **Em analise**, com comentarios de implementacao, testes, limites e link do PR #42. Nao foram concluidas: faltam revisao, homologacao e aparelhos fisicos. A evidencia principal esta em [SCHED-20](https://schedra-luiz.atlassian.net/browse/SCHED-20).
+
+O primeiro CI do PR passou nos testes, mas falhou na auditoria de dependencias. Foram aplicadas correcoes compativeis e migracao testada do Vitest; riscos residuais e criterios de liberacao estao em [AUDITORIA_DEPENDENCIAS.md](AUDITORIA_DEPENDENCIAS.md). CI verde nao equivale a ausencia de vulnerabilidades nem a aceite da entrega.
 
 ### Incremento local R02 em 22/10/2026
 

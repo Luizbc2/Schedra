@@ -47,5 +47,6 @@ O [DER local completo](diagrams/schedra-local.dbml) e gerado do SQL real: `npm r
 
 - Criar, editar e excluir clientes/compromissos/agendamentos sem conexao. Os comandos de negocio ainda passam pela API; a fila ativa neste incremento e a de fotos.
 - Idempotencia e controle de versao dos comandos de negocio, dependencias e interface de conflitos, previstos em R04. O header do avatar nao implica suporte geral de idempotencia na API.
-- Validar iPhone/Android reais, revisar o PR em rascunho e homologar. Nao houve deploy deste incremento.
+- Validar iPhone/Android reais, revisar o PR em rascunho e homologar. Nao houve deploy de producao deste incremento.
+- Tratar e revisar os riscos residuais das dependencias descritos em [AUDITORIA_DEPENDENCIAS.md](AUDITORIA_DEPENDENCIAS.md).
 - Redis, infraestrutura, C4/DDD e revisao visual completa dos diagramas seguem nas entregas seguintes.
