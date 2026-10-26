@@ -123,7 +123,7 @@ Não foram inventados PRs, entrevistas, reuniões, cerimônias, aprovações ou 
 
 ### Incremento local R03 em 26/10/2026
 
-SQLite, adaptador web, escopos, migracao de sessao, consultas locais e fotos BLOB com fila de envio foram implementados. Evidencias, caminhos e limites estao em [SQLITE_LOCAL.md](SQLITE_LOCAL.md); o DER local foi derivado do SQL real. Ainda faltam CRUD de negocio offline, PR e verificacao em aparelhos.
+SQLite, adaptador web, escopos, migracao de sessao, consultas locais e fotos BLOB com fila de envio foram implementados. Evidencias, caminhos e limites estao em [SQLITE_LOCAL.md](SQLITE_LOCAL.md); o DER local foi derivado do SQL real. [PR #42](https://github.com/Luizbc2/Schedra/pull/42) em rascunho para dev, precedido do [alinhamento de base #41](https://github.com/Luizbc2/Schedra/pull/41). Ainda faltam CRUD de negocio offline, revisao e verificacao em aparelhos; main e producao permanecem sem este incremento.
 
 A consulta inicial aos tickets SCHED-20 a SCHED-24 funcionou. As chamadas seguintes para atualizacao e releitura pelo conector excederam o tempo de espera; o estado remoto dessas tarefas precisa ser reconciliado. Este registro local nao afirma que o Jira foi atualizado nem que os aceites foram concluidos.
 

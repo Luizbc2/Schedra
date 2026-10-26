@@ -1,6 +1,6 @@
 # Persistencia local do aplicativo
 
-Implementacao local em 26/10/2026, incremento R03. O banco central da API permanece responsavel pelos dados compartilhados e pelas permissoes.
+Implementacao em 26/10/2026, incremento R03, na branch `feature/SCHED-20-local-sqlite`. [PR #42 em rascunho](https://github.com/Luizbc2/Schedra/pull/42), destinado a dev. O [PR #41](https://github.com/Luizbc2/Schedra/pull/41) alinha dev com a base atual de main antes da revisao. O banco central da API permanece responsavel pelos dados compartilhados e pelas permissoes.
 
 ## O que esta funcionando
 
@@ -47,5 +47,5 @@ O [DER local completo](diagrams/schedra-local.dbml) e gerado do SQL real: `npm r
 
 - Criar, editar e excluir clientes/compromissos/agendamentos sem conexao. Os comandos de negocio ainda passam pela API; a fila ativa neste incremento e a de fotos.
 - Idempotencia e controle de versao dos comandos de negocio, dependencias e interface de conflitos, previstos em R04. O header do avatar nao implica suporte geral de idempotencia na API.
-- Validar iPhone/Android reais, preparar PR, revisar e homologar. Nao houve publicacao deste incremento.
+- Validar iPhone/Android reais, revisar o PR em rascunho e homologar. Nao houve deploy deste incremento.
 - Redis, infraestrutura, C4/DDD e revisao visual completa dos diagramas seguem nas entregas seguintes.
