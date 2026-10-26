@@ -37,7 +37,7 @@ const sessionStorage = {
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<StoredSession>(emptySession);
   const [loading, setLoading] = useState(true);
-  const modeTransition = useRef(new Animated.Value(1)).current;
+  const modeTransition = useRef(new Animated.Value(0)).current;
   const modeTransitionLocked = useRef(false);
 
   useEffect(() => {
@@ -96,22 +96,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setWorkspaceMode: async (workspaceMode) => {
       if (workspaceMode === session.workspaceMode || modeTransitionLocked.current) return;
       modeTransitionLocked.current = true;
+      const direction = session.workspaceMode === "business" ? -1 : 1;
 
       await new Promise<void>((resolve) => {
         Animated.timing(modeTransition, {
-          toValue: 0,
-          duration: 150,
+          toValue: direction,
+          duration: 210,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: true,
         }).start(async () => {
+          modeTransition.setValue(-direction);
           try {
             await persist({ ...session, workspaceMode });
           } catch {
             setSession({ ...session, workspaceMode });
           }
           Animated.timing(modeTransition, {
-            toValue: 1,
-            duration: 320,
+            toValue: 0,
+            duration: 270,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }).start(() => {

@@ -1,4 +1,6 @@
 import { apiRequest } from "../../../shared/api/client";
+import { Platform } from "react-native";
+import { avatarFile } from "../../profile/api/avatar-file";
 import type { AuthOrganization, AuthUser, LoginInput, SignupInput } from "../types";
 
 export type AuthResponse = {
@@ -21,9 +23,15 @@ export const logout = (token: string) => apiRequest<void>("/auth/logout", {
   headers: { Authorization: `Bearer ${token}` },
 });
 
-export const uploadAvatar = (token: string, uri: string, mimeType = "image/jpeg") => {
+export const uploadAvatar = async (token: string, uri: string, mimeType?: string) => {
   const body = new FormData();
-  body.append("avatar", { uri, name: `avatar-${Date.now()}.jpg`, type: mimeType } as unknown as Blob);
+  if (Platform.OS === "web") {
+    const blob = await (await fetch(uri)).blob();
+    const file = avatarFile(uri, blob.type || mimeType);
+    body.append("avatar", blob, file.name);
+  } else {
+    body.append("avatar", avatarFile(uri, mimeType) as unknown as Blob);
+  }
 
   return apiRequest<{ message: string; user: AuthUser }>("/users/me/avatar", {
     method: "PATCH",
