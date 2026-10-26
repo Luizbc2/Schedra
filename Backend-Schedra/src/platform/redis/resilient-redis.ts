@@ -12,6 +12,7 @@ export class ResilientRedis {
   private failures = 0;
   private openUntil = 0;
   private probing = false;
+  private generation = 0;
   constructor(
     private readonly transport: RedisTransport,
     private readonly policy: RedisPolicy,
@@ -26,6 +27,7 @@ export class ResilientRedis {
       return { available: false };
     }
     const probe = this.openUntil !== 0;
+    const generation = this.generation;
     if (probe) this.probing = true;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -36,22 +38,25 @@ export class ResilientRedis {
       const value = await Promise.race([
         operation(args => this.transport.command(args, controller.signal)), timeout,
       ]);
-      if (probe) this.log({ type: "redis_circuit", state: "closed" });
-      this.failures = 0;
-      this.openUntil = 0;
+      if (generation === this.generation) {
+        if (probe) { this.log({ type: "redis_circuit", state: "closed" }); this.generation += 1; }
+        this.failures = 0;
+        this.openUntil = 0;
+      }
       countInfrastructure("redis", "success");
       return { available: true, value };
     } catch {
-      this.failures += 1;
-      if (this.failures >= this.policy.failureThreshold || probe) {
+      if (generation === this.generation) this.failures += 1;
+      if (generation === this.generation && (this.failures >= this.policy.failureThreshold || probe)) {
         this.openUntil = this.now() + this.policy.cooldownMs;
+        this.generation += 1;
         this.log({ type: "redis_circuit", state: "open" });
       }
       countInfrastructure("redis", "unavailable");
       return { available: false };
     } finally {
       clearTimeout(timer);
-      this.probing = false;
+      if (probe) this.probing = false;
     }
   }
 }

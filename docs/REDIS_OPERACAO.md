@@ -53,4 +53,4 @@ Logs `event_published` e `event_consumed` devem ter o mesmo eventId/requestId. N
 - Invalidacao indisponivel pode deixar dados de listagem antigos ate TTL; permissoes continuam consultadas independentemente do cache.
 - Cache cobre a API de clientes, nao todo o sistema. Gravacoes diretas no banco fora dessa API nao emitem invalidacao.
 - Cada processo mantem seus contadores; coletor deve agregar instancias. Sem processo persistente, consumo continuo nao e garantido.
-- O Docker Desktop local apresentou erro do gerenciador de inferencia nesta data. O manifesto passou em `compose config`; testes de runtime dependem do CI ou de reparar o daemon. Nao foi feito reset de fabrica.
+- O Docker Desktop local apresentou erro do gerenciador de inferencia nesta data. O manifesto passou em `compose config`; o runtime foi validado no [CI Linux de referencia](https://github.com/Luizbc2/Schedra/actions/runs/40345213988). Os quatro jobs passaram, incluindo Redis real, eventos correlacionados e smoke de containers. Nao foi feito reset de fabrica local.

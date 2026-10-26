@@ -92,6 +92,32 @@ describe("Redis cache-aside", () => {
     expect(await cache.read("user:1", query, async () => ({ items: ["db"] }), valid)).toEqual({ items: ["db"] });
     await expect(cache.read("user:1", query, async () => { throw new Error("DB down"); }, valid)).rejects.toThrow("DB down");
   });
+  it("descarta JSON corrompido e nao guarda valores acima do limite", async () => {
+    const { cache, transport } = setup();
+    const load = jest.fn(async () => ({ items: ["fresh"] }));
+    await cache.read("org:1", query, load, valid);
+    const key = [...transport.rows.keys()].find(value => /:[0-9a-f]{64}$/.test(value))!;
+    transport.rows.set(key, { value: "{broken" });
+    expect(await cache.read("org:1", query, load, valid)).toEqual({ items: ["fresh"] });
+    expect(load).toHaveBeenCalledTimes(2);
+    const huge = jest.fn(async () => ({ items: ["x".repeat(513 * 1024)] }));
+    await cache.read("org:2", query, huge, valid);
+    await cache.read("org:2", query, huge, valid);
+    expect(huge).toHaveBeenCalledTimes(2);
+  });
+  it("uma resposta antiga nao fecha um circuito aberto por falhas concorrentes", async () => {
+    const { redis, transport } = setup();
+    let release!: () => void;
+    const delayed = new Promise<void>(resolve => { release = resolve; });
+    const old = redis.execute(async () => { await delayed; return "old"; });
+    transport.down = true;
+    await redis.execute(command => command(["GET", "x"]));
+    await redis.execute(command => command(["GET", "x"]));
+    release();
+    await old;
+    transport.down = false;
+    expect((await redis.execute(command => command(["GET", "x"])) ).available).toBe(false);
+  });
   it("deadline cancela comando e breaker abre, evita repeticao e recupera", async () => {
     const { redis, transport, log } = setup();
     transport.down = true;

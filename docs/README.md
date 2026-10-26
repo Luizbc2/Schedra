@@ -5,6 +5,8 @@ O planejamento da próxima entrega foi revisado em 22/10/2026. Começar pela nov
 | Documento | Finalidade |
 | --- | --- |
 | [Nova entrega de arquitetura e backend](NOVA_ENTREGA_ARQUITETURA.md) | Rubrica recebida por imagem: C4, DDD, ADRs, Redis, Pub/Sub, Docker/Nginx, qualidade e Jira |
+| [Avaliacao atual](AVALIACAO_NOVA_ENTREGA.md) | Estimativa ponderada, evidencias verificadas e pendencias, sem prometer nota |
+| [Contexto e ciclos reais](GESTAO_CICLOS.md) | Cynefin aplicado, escolha agil e registro honesto dos ciclos executados |
 | [Gestão no Jira](GESTAO_JIRA.md) | Site real, quadro SCHED, oito incrementos, histórias, critérios e vínculos; não confundir backlog com implementação |
 | [Arquitetura atual](architecture/README.md) | C4 Contexto/Containers, fluxos, limites e rastreabilidade com o codigo |
 | [Contextos e DDD](architecture/DDD.md) | Context Map, entidades, valores, agregado de Agenda e invariantes |

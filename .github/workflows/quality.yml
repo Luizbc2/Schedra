@@ -84,6 +84,8 @@ jobs:
         with:
           node-version: 24
       - run: node scripts/verify-stack.mjs
+      - if: failure()
+        run: docker compose -p schedra-rubric-qa -f compose.validation.yml logs --no-color --tail 80
       - if: always()
         run: docker compose -p schedra-rubric-qa -f compose.validation.yml down
 

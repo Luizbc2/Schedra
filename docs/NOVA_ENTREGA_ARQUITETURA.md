@@ -92,7 +92,7 @@ Concluído: código integrado, testes adequados, evidência ligada à história,
 
 ## Registro de execução
 
-Atualizacao em 26/10/2026: R02 tem controles compartilhados adotados e testes locais. R03 implementa SQLite, perfil/preferencias, consultas locais e fotos BLOB com fila de envio; consultar [persistencia e evidencias](SQLITE_LOCAL.md). CRUD de negocio offline, revisao em aparelhos e PRs continuam pendentes. Os checks abaixo representam a entrega integral, nao apenas a existencia da base.
+Atualizacao em 26/10/2026: R02/R03 tem controles, SQLite e fotos no PR #42. O [PR #43](https://github.com/Luizbc2/Schedra/pull/43) adiciona cache Redis, Pub/Sub, histograma, OpenAPI exportavel, stack isolada, C4/DDD/ADRs e cenarios. O CI de referencia aprovou quatro jobs, com 104 testes backend e verificacao real dos containers. Consultar a [avaliacao ponderada e lacunas](AVALIACAO_NOVA_ENTREGA.md). Os checks abaixo representam a entrega integral e aceita, nao apenas a existencia da base. Nenhum PR foi integrado em main nesta rodada.
 
 - [x] Interpretar todos os critérios visíveis e mapear entregáveis.
 - [x] Inspecionar baseline e preservar alterações existentes.
