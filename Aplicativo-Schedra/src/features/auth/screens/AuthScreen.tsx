@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   KeyboardAvoidingView,
@@ -10,15 +9,19 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ApiError } from "../../../shared/api/client";
+import { Button } from "../../../shared/components/ui/Button";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { FormField } from "../../../shared/components/ui/FormField";
+import { InlineError } from "../../../shared/components/ui/FeedbackState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts } from "../../../theme/tokens";
 import { useAuth } from "../AuthProvider";
+import { formatCpf, normalizeCpf, validateCpf } from "../cpf";
 
 type AuthMode = "login" | "signup";
 
@@ -29,6 +32,15 @@ const getPasswordRequirements = (password: string) => [
   { id: "number", label: "Um número", met: /\d/.test(password) },
   { id: "special", label: "Um caractere especial", met: /[^A-Za-z0-9]/.test(password) },
 ];
+
+const getCpfRequirements = (cpf: string) => {
+  const digits = normalizeCpf(cpf);
+
+  return [
+    { id: "length", label: "11 dígitos", met: digits.length === 11 },
+    { id: "valid", label: "CPF válido", met: validateCpf(digits) },
+  ];
+};
 
 export function AuthScreen() {
   const { colors, mode, toggleTheme } = useAppTheme();
@@ -113,7 +125,7 @@ export function AuthScreen() {
       if (screen === "login") {
         await signIn({ email: form.email, password: form.password });
       } else {
-        await signUp(form);
+        await signUp({ ...form, cpf: normalizeCpf(form.cpf) });
       }
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Não foi possível acessar sua conta.");
@@ -128,8 +140,10 @@ export function AuthScreen() {
     outputRange: [0, selectorWidth],
   });
   const passwordRequirements = getPasswordRequirements(form.password);
+  const cpfRequirements = getCpfRequirements(form.cpf);
   const passwordIsStrong = passwordRequirements.every((requirement) => requirement.met);
-  const submitDisabled = submitting || (screen === "signup" && !passwordIsStrong);
+  const cpfIsValid = cpfRequirements.every((requirement) => requirement.met);
+  const submitDisabled = submitting || (screen === "signup" && (!passwordIsStrong || !cpfIsValid));
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -140,16 +154,11 @@ export function AuthScreen() {
               <Text style={[styles.brand, { color: colors.text }]}>Schedra</Text>
               <Text style={[styles.tagline, { color: colors.textMuted }]}>Agenda inteligente</Text>
             </View>
-            <Pressable
+            <IconButton
               accessibilityLabel="Alternar tema"
+              icon={mode === "dark" ? "sunny-outline" : "moon-outline"}
               onPress={toggleTheme}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Ionicons name={mode === "dark" ? "sunny-outline" : "moon-outline"} size={20} color={colors.text} />
-            </Pressable>
+            />
           </View>
 
           <View
@@ -198,51 +207,57 @@ export function AuthScreen() {
             <View style={styles.form}>
               {screen === "signup" && (
                 <>
-                  <Field label="Nome" value={form.name} onChangeText={(value) => update("name", value)} colors={colors} />
-                  <Field
+                  <FormField label="Nome" value={form.name} onChangeText={(value) => update("name", value)} editable={!submitting} />
+                  <FormField
                     label="CPF"
                     value={form.cpf}
-                    onChangeText={(value) => update("cpf", value)}
+                    onChangeText={(value) => update("cpf", formatCpf(value))}
                     keyboardType="numeric"
+                    maxLength={14}
+                    placeholder="000.000.000-00"
+                    editable={!submitting}
+                  />
+                  <ValidationChecklist
+                    accessibilityLabel="Requisitos do CPF"
+                    title="Seu CPF precisa ter"
+                    requirements={cpfRequirements}
                     colors={colors}
                   />
                 </>
               )}
-              <Field
+              <FormField
                 label="E-mail"
                 value={form.email}
                 onChangeText={(value) => update("email", value)}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                colors={colors}
+                editable={!submitting}
               />
-              <Field
+              <FormField
                 label="Senha"
                 value={form.password}
                 onChangeText={(value) => update("password", value)}
                 secureTextEntry
                 maxLength={72}
-                colors={colors}
+                editable={!submitting}
               />
-              {screen === "signup" && <PasswordChecklist requirements={passwordRequirements} colors={colors} />}
-              {!!error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
-              <Pressable
+              {screen === "signup" && (
+                <ValidationChecklist
+                  accessibilityLabel="Requisitos da senha"
+                  title="Sua senha precisa ter"
+                  requirements={passwordRequirements}
+                  colors={colors}
+                />
+              )}
+              {!!error && <InlineError message={error} />}
+              <Button
+                label={screen === "login" ? "Entrar" : "Criar conta"}
+                icon="arrow-forward"
+                iconPosition="end"
                 disabled={submitDisabled}
+                loading={submitting}
                 onPress={submit}
-                style={({ pressed }) => [
-                  styles.submit,
-                  { backgroundColor: colors.accent, opacity: submitDisabled ? 0.5 : pressed ? 0.88 : 1 },
-                ]}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <>
-                    <Text style={styles.submitText}>{screen === "login" ? "Entrar" : "Criar conta"}</Text>
-                    <Ionicons name="arrow-forward" color="#FFF" size={19} />
-                  </>
-                )}
-              </Pressable>
+              />
             </View>
           </Animated.View>
         </ScrollView>
@@ -274,19 +289,23 @@ function AuthSwitchOption({
   );
 }
 
-function PasswordChecklist({
+function ValidationChecklist({
+  accessibilityLabel,
+  title,
   requirements,
   colors,
 }: {
-  requirements: ReturnType<typeof getPasswordRequirements>;
+  accessibilityLabel: string;
+  title: string;
+  requirements: Array<{ id: string; label: string; met: boolean }>;
   colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
   return (
     <View
-      accessibilityLabel="Requisitos da senha"
+      accessibilityLabel={accessibilityLabel}
       style={[styles.passwordChecklist, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }]}
     >
-      <Text style={[styles.passwordChecklistTitle, { color: colors.text }]}>Sua senha precisa ter</Text>
+      <Text style={[styles.passwordChecklistTitle, { color: colors.text }]}>{title}</Text>
       <View style={styles.passwordRequirements}>
         {requirements.map((requirement) => {
           const color = requirement.met ? colors.success : colors.danger;
@@ -307,23 +326,6 @@ function PasswordChecklist({
   );
 }
 
-function Field({
-  label,
-  colors,
-  ...props
-}: { label: string; colors: ReturnType<typeof useAppTheme>["colors"] } & React.ComponentProps<typeof TextInput>) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-      <TextInput
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-        {...props}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   flex: { flex: 1 },
@@ -331,7 +333,6 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   brand: { fontFamily: fonts.bodyBold, fontSize: 23 },
   tagline: { fontFamily: fonts.bodyMedium, fontSize: 12 },
-  iconButton: { width: 44, height: 44, borderWidth: 1, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   authSwitch: { height: 52, padding: 4, borderRadius: 8, borderWidth: 1, flexDirection: "row", position: "relative" },
   authSwitchSelector: { position: "absolute", left: 4, top: 4, bottom: 4, borderRadius: 6 },
   authSwitchOption: { flex: 1, alignItems: "center", justifyContent: "center", zIndex: 1 },
@@ -342,16 +343,10 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.displayBold, fontSize: 42 },
   description: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   form: { gap: 18 },
-  field: { gap: 7 },
-  label: { fontFamily: fonts.bodyBold, fontSize: 13 },
-  input: { minHeight: 54, borderWidth: 1, borderRadius: 8, paddingHorizontal: 15, fontFamily: fonts.body, fontSize: 15 },
-  error: { fontFamily: fonts.bodyMedium, fontSize: 13 },
   passwordChecklist: { borderWidth: 1, borderRadius: 8, padding: 14, gap: 11 },
   passwordChecklistTitle: { fontFamily: fonts.bodyBold, fontSize: 12 },
   passwordRequirements: { gap: 8 },
   passwordRequirement: { flexDirection: "row", alignItems: "center", gap: 8 },
   passwordRequirementText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 12 },
-  submit: { minHeight: 56, borderRadius: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  submitText: { color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 15 },
   pressed: { opacity: 0.72 },
 });

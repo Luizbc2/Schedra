@@ -166,6 +166,31 @@ const migrations: Migration[] = [
       });
     },
   },
+  {
+    id: "20260902-005-user-profile-columns",
+    up: async (queryInterface) => {
+      await addColumnIfMissing(queryInterface, "users", "accountType", {
+        type: DataTypes.ENUM("business", "personal"),
+        allowNull: false,
+        defaultValue: "business",
+      });
+      await addColumnIfMissing(queryInterface, "users", "role", {
+        type: DataTypes.ENUM("admin", "user"),
+        allowNull: false,
+        defaultValue: "user",
+      });
+      await addColumnIfMissing(queryInterface, "users", "active", {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      });
+      await addColumnIfMissing(queryInterface, "users", "avatarUrl", {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null,
+      });
+    },
+  },
 ];
 
 export class MigrationRunner {

@@ -1,0 +1,345 @@
+{
+  "site": "https://schedra-luiz.atlassian.net",
+  "projectKey": "SCHED",
+  "boardId": 1,
+  "createdAt": "2026-10-22",
+  "epics": {
+    "1": "SCHED-5",
+    "2": "SCHED-6",
+    "3": "SCHED-7",
+    "4": "SCHED-8",
+    "5": "SCHED-9",
+    "6": "SCHED-10",
+    "7": "SCHED-11",
+    "8": "SCHED-12"
+  },
+  "versions": {
+    "1": "10000",
+    "2": "10001",
+    "3": "10002",
+    "4": "10003",
+    "5": "10004",
+    "6": "10005",
+    "7": "10006",
+    "8": "10007"
+  },
+  "issues": {
+    "SC-01": {
+      "key": "SCHED-1",
+      "pr": 1,
+      "summary": "SC-01 - Relacionar cada critério à entrega e à evidência"
+    },
+    "SC-02": {
+      "key": "SCHED-2",
+      "pr": 1,
+      "summary": "SC-02 - Acompanhar trabalho no Jira"
+    },
+    "SC-03": {
+      "key": "SCHED-3",
+      "pr": 1,
+      "summary": "SC-03 - Justificar a abordagem de gestão"
+    },
+    "SC-04": {
+      "key": "SCHED-13",
+      "pr": 1,
+      "summary": "SC-04 - Contratos claros de arquitetura e persistência"
+    },
+    "SC-05": {
+      "key": "SCHED-14",
+      "pr": 1,
+      "summary": "SC-05 - Evoluções ligadas às minhas necessidades"
+    },
+    "SC-06": {
+      "key": "SCHED-15",
+      "pr": 2,
+      "summary": "SC-06 - Ações consistentes em todas as telas"
+    },
+    "SC-07": {
+      "key": "SCHED-16",
+      "pr": 2,
+      "summary": "SC-07 - Preencher formulários com feedback previsível"
+    },
+    "SC-08": {
+      "key": "SCHED-17",
+      "pr": 2,
+      "summary": "SC-08 - Entender carregamento, vazio e falha"
+    },
+    "SC-09": {
+      "key": "SCHED-18",
+      "pr": 2,
+      "summary": "SC-09 - Telas legíveis e responsabilidades separadas"
+    },
+    "SC-10": {
+      "key": "SCHED-19",
+      "pr": 2,
+      "summary": "SC-10 - Consistência com a base existente"
+    },
+    "SC-11": {
+      "key": "SCHED-20",
+      "pr": 3,
+      "summary": "SC-11 - Dados persistentes após reiniciar o aplicativo"
+    },
+    "SC-12": {
+      "key": "SCHED-21",
+      "pr": 3,
+      "summary": "SC-12 - Meus dados separados dos de outras contas"
+    },
+    "SC-13": {
+      "key": "SCHED-22",
+      "pr": 3,
+      "summary": "SC-13 - Manter perfil, tema e modo localmente"
+    },
+    "SC-14": {
+      "key": "SCHED-23",
+      "pr": 3,
+      "summary": "SC-14 - Consultar cadastros e agenda salvos"
+    },
+    "SC-15": {
+      "key": "SCHED-24",
+      "pr": 3,
+      "summary": "SC-15 - Minhas fotos armazenadas no aparelho"
+    },
+    "SC-16": {
+      "key": "SCHED-25",
+      "pr": 4,
+      "summary": "SC-16 - Criar, editar e excluir clientes sem conexão"
+    },
+    "SC-17": {
+      "key": "SCHED-26",
+      "pr": 4,
+      "summary": "SC-17 - Registrar compromissos pessoais offline"
+    },
+    "SC-18": {
+      "key": "SCHED-27",
+      "pr": 4,
+      "summary": "SC-18 - Preparar alterações da agenda empresarial offline"
+    },
+    "SC-19": {
+      "key": "SCHED-28",
+      "pr": 4,
+      "summary": "SC-19 - Trocar a foto offline"
+    },
+    "SC-20": {
+      "key": "SCHED-29",
+      "pr": 4,
+      "summary": "SC-20 - Ver o que ainda não foi enviado"
+    },
+    "SC-21": {
+      "key": "SCHED-30",
+      "pr": 4,
+      "summary": "SC-21 - Que uma alteração seja aplicada uma única vez"
+    },
+    "SC-22": {
+      "key": "SCHED-31",
+      "pr": 4,
+      "summary": "SC-22 - Resolver divergências entre dispositivos"
+    },
+    "SC-23": {
+      "key": "SCHED-32",
+      "pr": 4,
+      "summary": "SC-23 - Retomar sincronização após falhas"
+    },
+    "SC-24": {
+      "key": "SCHED-33",
+      "pr": 4,
+      "summary": "SC-24 - Minha foto confirmada no servidor"
+    },
+    "SC-25": {
+      "key": "SCHED-34",
+      "pr": 4,
+      "summary": "SC-25 - Uploads em disco com persistência e validação"
+    },
+    "SC-26": {
+      "key": "SCHED-35",
+      "pr": 7,
+      "summary": "SC-26 - Entender arquitetura e execução"
+    },
+    "SC-27": {
+      "key": "SCHED-36",
+      "pr": 7,
+      "summary": "SC-27 - Modelos de dados completos e coerentes"
+    },
+    "SC-28": {
+      "key": "SCHED-37",
+      "pr": 7,
+      "summary": "SC-28 - Entender objetivos e regras"
+    },
+    "SC-29": {
+      "key": "SCHED-38",
+      "pr": 7,
+      "summary": "SC-29 - Entender as mensagens e falhas"
+    },
+    "SC-30": {
+      "key": "SCHED-39",
+      "pr": 7,
+      "summary": "SC-30 - Diagramas legíveis e rastreáveis"
+    },
+    "SC-31": {
+      "key": "SCHED-40",
+      "pr": 8,
+      "summary": "SC-31 - Que as regras sobrevivam à migração"
+    },
+    "SC-32": {
+      "key": "SCHED-41",
+      "pr": 8,
+      "summary": "SC-32 - Proteção de conta e organização"
+    },
+    "SC-33": {
+      "key": "SCHED-42",
+      "pr": 8,
+      "summary": "SC-33 - Continuidade após interrupções"
+    },
+    "SC-34": {
+      "key": "SCHED-43",
+      "pr": 8,
+      "summary": "SC-34 - Compatibilidade e usabilidade"
+    },
+    "SC-35": {
+      "key": "SCHED-44",
+      "pr": 8,
+      "summary": "SC-35 - Rastrear o que foi entregue"
+    },
+    "ARQ-01": {
+      "key": "SCHED-45",
+      "pr": 7,
+      "summary": "ARQ-01 - C4, ADRs e cenários de qualidade"
+    },
+    "ARQ-02": {
+      "key": "SCHED-46",
+      "pr": 7,
+      "summary": "ARQ-02 - Context Map, bounded contexts e agregado de Agenda"
+    },
+    "ARQ-03": {
+      "key": "SCHED-47",
+      "pr": 6,
+      "summary": "ARQ-03 - OpenAPI exportável e ADR dos bancos"
+    },
+    "ARQ-04": {
+      "key": "SCHED-48",
+      "pr": 6,
+      "summary": "ARQ-04 - SLOs, SLIs, timeouts, retries e circuit breaker"
+    },
+    "ARQ-05": {
+      "key": "SCHED-49",
+      "pr": 6,
+      "summary": "ARQ-05 - Pipeline build/test/deploy, rollback e runbook"
+    },
+    "BE-01": {
+      "key": "SCHED-50",
+      "pr": 5,
+      "summary": "BE-01 - Cache-aside Redis isolado com TTL e invalidação"
+    },
+    "BE-02": {
+      "key": "SCHED-51",
+      "pr": 5,
+      "summary": "BE-02 - Publicar e consumir eventos via Redis Pub/Sub"
+    },
+    "BE-03": {
+      "key": "SCHED-52",
+      "pr": 6,
+      "summary": "BE-03 - Compose com Redis e Nginx reverso validado"
+    },
+    "BE-04": {
+      "key": "SCHED-53",
+      "pr": 6,
+      "summary": "BE-04 - DTOs, erros e observabilidade estruturada"
+    },
+    "TF-03": {
+      "key": "SCHED-54",
+      "pr": 1,
+      "summary": "TF-03 - Planejar e registrar ciclos reais de entrega"
+    },
+    "BUG-01": {
+      "key": "SCHED-55",
+      "pr": 7,
+      "summary": "BUG-01 - Corrigir diagramas com sobreposição, conteúdo pobre e fluxos incorretos"
+    },
+    "BUG-02": {
+      "key": "SCHED-56",
+      "pr": 4,
+      "summary": "BUG-02 - Revalidar falha de avatar no Expo e garantir persistência"
+    }
+  },
+  "dependencies": [
+    [
+      "SCHED-5",
+      "SCHED-6"
+    ],
+    [
+      "SCHED-6",
+      "SCHED-7"
+    ],
+    [
+      "SCHED-7",
+      "SCHED-8"
+    ],
+    [
+      "SCHED-5",
+      "SCHED-9"
+    ],
+    [
+      "SCHED-9",
+      "SCHED-10"
+    ],
+    [
+      "SCHED-8",
+      "SCHED-11"
+    ],
+    [
+      "SCHED-10",
+      "SCHED-11"
+    ],
+    [
+      "SCHED-11",
+      "SCHED-12"
+    ],
+    [
+      "SCHED-20",
+      "SCHED-21"
+    ],
+    [
+      "SCHED-20",
+      "SCHED-23"
+    ],
+    [
+      "SCHED-20",
+      "SCHED-24"
+    ],
+    [
+      "SCHED-24",
+      "SCHED-28"
+    ],
+    [
+      "SCHED-30",
+      "SCHED-32"
+    ],
+    [
+      "SCHED-31",
+      "SCHED-32"
+    ],
+    [
+      "SCHED-28",
+      "SCHED-33"
+    ],
+    [
+      "SCHED-34",
+      "SCHED-33"
+    ],
+    [
+      "SCHED-50",
+      "SCHED-51"
+    ],
+    [
+      "SCHED-50",
+      "SCHED-48"
+    ],
+    [
+      "SCHED-53",
+      "SCHED-48"
+    ],
+    [
+      "SCHED-52",
+      "SCHED-49"
+    ]
+  ]
+}

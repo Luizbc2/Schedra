@@ -5,10 +5,11 @@ import { UpdateUserProfileInput, UserRepository } from "../../auth/repositories/
 import { isValidCpf, normalizeCpf } from "../../../shared/utils/cpf.util";
 import { hasTextLengthBetween, INPUT_LIMITS, normalizeSingleLineText } from "../../../shared/utils/input-validation.util";
 import { validatePasswordStrength } from "../../../shared/utils/password-strength.util";
-import { hashPassword } from "../../auth/utils/password.util";
+import { comparePassword, hashPassword } from "../../auth/utils/password.util";
 
 type UpdateUserProfileServiceInput = UpdateUserProfileInput & {
   authenticatedUserId: number;
+  currentPassword?: string;
   email?: string;
   userId: number;
 };
@@ -36,6 +37,7 @@ export class UpdateUserProfileService {
   public async execute(input: UpdateUserProfileServiceInput): Promise<UpdateUserProfileServiceResult> {
     const name = normalizeSingleLineText(input.name, INPUT_LIMITS.name);
     const cpf = normalizeCpf(input.cpf);
+    const currentPassword = input.currentPassword?.trim() ?? "";
     const password = input.password?.trim() ?? "";
 
     if (!input.authenticatedUserId || !input.userId || !name || !cpf) {
@@ -103,6 +105,22 @@ export class UpdateUserProfileService {
         success: false,
         message: passwordValidationMessage,
         statusCode: 400,
+      };
+    }
+
+    if (password && !currentPassword) {
+      return {
+        success: false,
+        message: "Informe a senha atual.",
+        statusCode: 400,
+      };
+    }
+
+    if (password && !(await comparePassword(currentPassword, user.password))) {
+      return {
+        success: false,
+        message: "Senha atual incorreta.",
+        statusCode: 401,
       };
     }
 
@@ -178,6 +196,8 @@ export class UpdateUserProfileService {
       email: user.email,
       cpf: user.cpf,
       accountType: user.accountType ?? "business",
+      role: user.role ?? "user",
+      active: user.active ?? true,
       avatarUrl: user.avatarUrl ?? null,
     };
   }

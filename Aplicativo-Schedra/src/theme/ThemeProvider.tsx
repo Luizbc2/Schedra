@@ -1,9 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkTheme, DefaultTheme, type Theme } from "@react-navigation/native";
-import { createContext, type PropsWithChildren, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, type PropsWithChildren, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Appearance } from "react-native";
 
 import { darkColors, lightColors, type AppColors } from "./tokens";
+import { loadTheme, saveTheme } from "../shared/database/preferences";
 
 type ThemeMode = "dark" | "light";
 
@@ -14,18 +14,21 @@ type ThemeContextValue = {
   toggleTheme: () => void;
 };
 
-const STORAGE_KEY = "@schedra/theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: PropsWithChildren) {
   const [mode, setMode] = useState<ThemeMode>(Appearance.getColorScheme() === "light" ? "light" : "dark");
+  const changedByUser = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((storedMode) => {
+    let active = true;
+    loadTheme().then((storedMode) => {
+      if (!active || changedByUser.current) return;
       if (storedMode === "dark" || storedMode === "light") {
         setMode(storedMode);
       }
-    });
+    }).catch(() => undefined);
+    return () => { active = false; };
   }, []);
 
   const value = useMemo<ThemeContextValue>(() => {
@@ -48,11 +51,10 @@ export function ThemeProvider({ children }: PropsWithChildren) {
         },
       },
       toggleTheme: () => {
-        setMode((currentMode) => {
-          const nextMode = currentMode === "dark" ? "light" : "dark";
-          void AsyncStorage.setItem(STORAGE_KEY, nextMode);
-          return nextMode;
-        });
+        changedByUser.current = true;
+        const nextMode = mode === "dark" ? "light" : "dark";
+        setMode(nextMode);
+        void saveTheme(nextMode).catch(() => console.warn("Nao foi possivel salvar o tema localmente."));
       },
     };
   }, [mode]);
