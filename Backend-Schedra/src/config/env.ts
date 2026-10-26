@@ -74,6 +74,14 @@ export const env = {
     authMaxRequests: toNumber(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 20),
   },
   metricsToken: normalizeString(process.env.METRICS_TOKEN, ""),
+  redis: {
+    url: normalizeString(process.env.REDIS_URL, ""),
+    prefix: normalizeString(process.env.REDIS_PREFIX, "schedra:v1").replace(/[^a-zA-Z0-9:_-]/g, "_"),
+    timeoutMs: Math.min(2000, Math.max(50, toNumber(process.env.REDIS_TIMEOUT_MS, 150))),
+    ttlSeconds: Math.min(300, Math.max(1, toNumber(process.env.REDIS_CACHE_TTL_SECONDS, 30))),
+    failureThreshold: 3,
+    cooldownMs: 5000,
+  },
 };
 
 export const assertProductionEnvironment = (): void => {

@@ -1,0 +1,75 @@
+# Isolated academic validation stack; never loads the developer .env.
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: schedra_rubric_test
+      POSTGRES_USER: schedra_test
+      POSTGRES_PASSWORD: local_disposable_test_only
+    volumes:
+      - rubric_database:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U schedra_test -d schedra_rubric_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:8.2-alpine
+    command: [redis-server, --maxmemory, 64mb, --maxmemory-policy, allkeys-lru, --save, "", --appendonly, "no"]
+    networks: [data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  backend:
+    build: ./Backend-Schedra
+    environment:
+      NODE_ENV: development
+      PORT: "3333"
+      DATABASE_URL: postgres://schedra_test:local_disposable_test_only@database:5432/schedra_rubric_test
+      DB_DIALECT: postgres
+      DB_AUTO_SYNC: "false"
+      AUTH_SEED_ENABLED: "false"
+      JWT_SECRET: local_validation_secret_not_for_production_2026
+      METRICS_TOKEN: local_validation_metrics_not_for_production
+      REDIS_URL: redis://redis:6379/0
+      REDIS_PREFIX: schedra-rubric:v1
+      REDIS_TIMEOUT_MS: "300"
+      REDIS_CACHE_TTL_SECONDS: "30"
+      FRONTEND_URL: http://localhost:8090
+    networks: [app, data]
+    depends_on:
+      database: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3333/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 25
+      start_period: 15s
+  frontend:
+    build:
+      context: ./Frontend-Schedra
+      args: { VITE_API_BASE_URL: /api }
+    networks: [app]
+  nginx:
+    image: nginx:1.28-alpine
+    ports: ["127.0.0.1:8090:80"]
+    volumes: ["./infra/nginx/validation.conf:/etc/nginx/conf.d/default.conf:ro"]
+    networks: [app]
+    depends_on:
+      backend: { condition: service_healthy }
+      frontend: { condition: service_started }
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1/health]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  rubric_database:
+networks:
+  app:
+  data:
+    internal: true

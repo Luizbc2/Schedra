@@ -6,6 +6,12 @@ O planejamento da próxima entrega foi revisado em 22/10/2026. Começar pela nov
 | --- | --- |
 | [Nova entrega de arquitetura e backend](NOVA_ENTREGA_ARQUITETURA.md) | Rubrica recebida por imagem: C4, DDD, ADRs, Redis, Pub/Sub, Docker/Nginx, qualidade e Jira |
 | [Gestão no Jira](GESTAO_JIRA.md) | Site real, quadro SCHED, oito incrementos, histórias, critérios e vínculos; não confundir backlog com implementação |
+| [Arquitetura atual](architecture/README.md) | C4 Contexto/Containers, fluxos, limites e rastreabilidade com o codigo |
+| [Contextos e DDD](architecture/DDD.md) | Context Map, entidades, valores, agregado de Agenda e invariantes |
+| [ADRs](architecture/ADRS.md) | Monolito modular, bancos, cache versionado e semantica dos eventos |
+| [Qualidade e resiliencia](architecture/QUALITY.md) | SLO/SLI, cenarios mensuraveis, histograma e tratamento de falhas |
+| [Redis e operacao](REDIS_OPERACAO.md) | Configuracao, evidencias reproduziveis e runbook de recuperacao |
+| [OpenAPI exportavel](api/openapi.json) | Gerado do contrato servido pela API; verificado no CI |
 | [Persistencia local implementada](SQLITE_LOCAL.md) | SQLite, fotos BLOB, consultas offline, sessao, adaptador web e limites atuais |
 | [DER local SQLite](diagrams/schedra-local.dbml) | Onze tabelas locais e suas chaves; separado do banco central |
 | [Plano de reestruturação](PLANO_REESTRUTURACAO.md) | Componentização, SQLite, fotos locais, sincronização, revisão dos diagramas e 35 histórias em sete PRs |

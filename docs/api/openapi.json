@@ -1,0 +1,430 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Schedra API",
+    "version": "2.2.0",
+    "description": "API multiempresa para agenda profissional e compromissos pessoais."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AppointmentMutation": {
+        "type": "object",
+        "required": [
+          "clientId",
+          "professionalId",
+          "serviceId",
+          "scheduledAt",
+          "status",
+          "notes"
+        ],
+        "properties": {
+          "clientId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "professionalId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "serviceId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pendente",
+              "confirmado",
+              "cancelado"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AppointmentUpdate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AppointmentMutation"
+          },
+          {
+            "type": "object",
+            "required": [
+              "version"
+            ],
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
+      "AppointmentSwap": {
+        "type": "object",
+        "required": [
+          "firstId",
+          "firstVersion",
+          "secondId",
+          "secondVersion"
+        ],
+        "properties": {
+          "firstId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "firstVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "secondId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "secondVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Verifica a saúde da API",
+        "responses": {
+          "200": {
+            "description": "API disponível"
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Verifica a conexão com o banco",
+        "responses": {
+          "200": {
+            "description": "API pronta"
+          },
+          "503": {
+            "description": "Banco indisponível"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Expõe métricas Prometheus com token operacional",
+        "responses": {
+          "200": {
+            "description": "Métricas da API"
+          },
+          "401": {
+            "description": "Token operacional inválido"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Cria uma sessão autenticada",
+        "responses": {
+          "200": {
+            "description": "Sessão criada"
+          },
+          "401": {
+            "description": "Credenciais inválidas"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "summary": "Rotaciona o refresh token",
+        "responses": {
+          "200": {
+            "description": "Sessão renovada"
+          },
+          "401": {
+            "description": "Refresh token inválido"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Revoga a sessão atual",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessão revogada"
+          }
+        }
+      }
+    },
+    "/api/organizations": {
+      "get": {
+        "summary": "Lista organizações do usuário",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de organizações"
+          }
+        }
+      }
+    },
+    "/api/clients": {
+      "get": {
+        "summary": "Lista clientes da organização ativa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada"
+          }
+        }
+      }
+    },
+    "/api/professionals": {
+      "get": {
+        "summary": "Lista profissionais da organização ativa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada"
+          }
+        }
+      }
+    },
+    "/api/services": {
+      "get": {
+        "summary": "Lista serviços da organização ativa",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada"
+          }
+        }
+      }
+    },
+    "/api/appointments": {
+      "get": {
+        "summary": "Lista agendamentos",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada"
+          }
+        }
+      },
+      "post": {
+        "summary": "Agenda um horário com proteção contra conflito",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentMutation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agendamento criado"
+          },
+          "409": {
+            "description": "Horário indisponível"
+          }
+        }
+      }
+    },
+    "/api/appointments/{id}": {
+      "put": {
+        "summary": "Atualiza um agendamento com controle otimista de versão",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agendamento atualizado"
+          },
+          "409": {
+            "description": "Conflito de agenda ou versão"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Arquiva um agendamento e libera seus slots",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agendamento arquivado"
+          },
+          "404": {
+            "description": "Agendamento não encontrado no tenant"
+          }
+        }
+      }
+    },
+    "/api/appointments/swap": {
+      "post": {
+        "summary": "Troca dois agendamentos de forma atômica",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentSwap"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agendamentos trocados"
+          },
+          "409": {
+            "description": "Conflito de agenda ou versão"
+          }
+        }
+      }
+    },
+    "/api/users/me/avatar": {
+      "patch": {
+        "summary": "Valida, reencoda e atualiza o avatar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar atualizado"
+          },
+          "413": {
+            "description": "Arquivo grande"
+          },
+          "415": {
+            "description": "Conteúdo inválido"
+          }
+        }
+      }
+    }
+  }
+}
