@@ -121,6 +121,14 @@ Não foram inventados PRs, entrevistas, reuniões, cerimônias, aprovações ou 
 
 ## Pendências para execução
 
+### Redis, arquitetura e operacao em 26/10/2026
+
+[PR #43](https://github.com/Luizbc2/Schedra/pull/43) em rascunho para dev, dependente da base #42/#41. Cache-aside, Pub/Sub, resiliencia, histogramas, OpenAPI exportavel, C4/DDD/ADRs e stack isolada implementados. O [CI 8efead7](https://github.com/Luizbc2/Schedra/actions/runs/40346312755) aprovou backend/web/mobile/containers; 106 testes backend sem ignorados, com Redis e PostgreSQL reais. O smoke confirmou evento publicado/consumido, hit/miss, proxy, CRUD sem Redis e reinicio do banco. Nenhum dado de producao foi alterado.
+
+Pelo navegador, foram registrados comentarios verificaveis com PR, CI, limites e pendencias: SCHED-50, SCHED-51, SCHED-45, SCHED-47 e SCHED-3 em **Em analise**; SCHED-52, SCHED-53, SCHED-46, SCHED-48 e SCHED-54 em **Em andamento**, pois seus aceites ainda sao parciais. Nenhum foi marcado concluido. O conector respondeu a uma leitura de SCHED-50, mas a descoberta de transicoes expirou; a atualizacao foi conferida na interface.
+
+Consultar [avaliacao ponderada](AVALIACAO_NOVA_ENTREGA.md) e [registro de ciclos](GESTAO_CICLOS.md). A faixa estimada de 60-65% nao e nota ou aceite docente. Revisao humana, homologacao e release continuam pendentes; nao houve merge em main nem deploy de producao nesta rodada.
+
 ### Incremento local R03 em 26/10/2026
 
 SQLite, adaptador web, escopos, migracao de sessao, consultas locais e fotos BLOB com fila de envio foram implementados. Evidencias, caminhos e limites estao em [SQLITE_LOCAL.md](SQLITE_LOCAL.md); o DER local foi derivado do SQL real. [PR #42](https://github.com/Luizbc2/Schedra/pull/42) em rascunho para dev, precedido do [alinhamento de base #41](https://github.com/Luizbc2/Schedra/pull/41). Ainda faltam CRUD de negocio offline, revisao e verificacao em aparelhos; main e producao permanecem sem este incremento.

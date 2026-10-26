@@ -28,7 +28,7 @@ Atualizacao: 26/10/2026. Fonte: recorte da rubrica em NOVA_ENTREGA_ARQUITETURA.m
 - [PR #43](https://github.com/Luizbc2/Schedra/pull/43): Redis, eventos, API exportavel, arquitetura e stack isolada. Depende da base #42 e do alinhamento #41.
 - [CI de referencia b0c9954](https://github.com/Luizbc2/Schedra/actions/runs/40345213988): backend, web, mobile e containers aprovados. Backend: **104 testes, nenhum ignorado** nessa execucao, incluindo PostgreSQL/Redis reais.
 - O job containers registrou um mesmo eventId em publicacao/consumo e resultado com `proxy`, `readiness`, `protectedMetrics`, `redisOptional` e `databaseRestart` verdadeiros. Sao dados sinteticos; nenhum dado de producao foi alterado.
-- Testes adicionais de concorrencia do circuito e cache corrompido foram acrescentados depois dessa referencia; conferir o check do HEAD no PR antes de aceitar o ultimo commit.
+- [CI 8efead7](https://github.com/Luizbc2/Schedra/actions/runs/40346312755): os quatro jobs passaram novamente, agora com **106 testes backend, nenhum ignorado**, incluindo concorrencia do circuito e cache corrompido. O smoke real repetiu os resultados de proxy, eventos, cache e recuperacao. Conferir o check do HEAD no PR antes do aceite, pois atualizacoes posteriores geram novas execucoes.
 - Docker local passou no parse do Compose, mas o daemon falhou no gerenciador de inferencia. A evidencia de runtime veio do runner Linux do GitHub, nao de uma execucao local inventada.
 
 ## O que ainda impede 100%
