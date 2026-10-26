@@ -1,5 +1,7 @@
 # Rastreabilidade da rubrica e da proposta futura
 
+> Histórico da avaliação anterior. A revisão de 22/10/2026 identificou lacunas de componentização e persistência mobile. Para a próxima entrega, usar [RUBRICA_OUTUBRO_2026.md](RUBRICA_OUTUBRO_2026.md) e o [plano de reestruturação](PLANO_REESTRUTURACAO.md). Os demais status antigos não foram revalidados nesta revisão.
+
 Esta matriz separa dois tipos de evidência: implementação existente, usada nos critérios técnicos, e documentação das próximas evoluções, usada em Engenharia e Análise de Projeto. Um item futuro documentado não é apresentado como funcionalidade pronta.
 
 ## Desenvolvimento para Dispositivos Móveis
@@ -7,7 +9,7 @@ Esta matriz separa dois tipos de evidência: implementação existente, usada no
 | Item | Valor | Status | Evidência |
 | --- | ---: | --- | --- |
 | Arquitetura e padronização | 0,5 | Atendido | `Aplicativo-Schedra/src` organizado por feature, shared, navigation e theme |
-| Componentização e clean code | 1,0 | Atendido | Componentes compartilhados, APIs, tipos e validações isoladas |
+| Componentização e clean code | 1,0 | Parcial; reaberto em 22/10/2026 | Há componentes compartilhados, mas botões e campos repetidos nas telas mobile ainda precisam ser centralizados e adotados |
 | CRUD aplicativo x API x banco | 1,0 | Atendido | CRUD completo de clientes no aplicativo e backend |
 | Regras de negócio | 0,5 | Atendido | `REQUIREMENTS.md`, serviços do backend e validações mobile |
 | Usabilidade, compatibilidade e segurança | 1,0 | Implementado; aceite em aparelho pendente | `MOBILE_VALIDATION.md`, SecureStore, JWT, RBAC e bundles multiplataforma |

@@ -1,5 +1,7 @@
 # Diagramas das implementações futuras do Schedra
 
+> Revisão pendente desde 22/10/2026. O [catálogo de revisão](PLANO_REESTRUTURACAO.md#5-conteúdo-exigido-para-todos-os-diagramas) define conteúdo, semântica e aceite visual para todos os desenhos, incluindo o novo DER SQLite. As imagens atuais não representam essa revisão como concluída.
+
 > Catálogo técnico. A proposta consolidada com os diagramas incorporados está em [PROPOSTA.md](PROPOSTA.md).
 
 Os diagramas desta seção representam a solução proposta para lacunas ainda existentes. Eles não afirmam que os componentes, tabelas ou fluxos já estejam implementados.

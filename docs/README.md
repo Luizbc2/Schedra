@@ -1,9 +1,17 @@
 # Documentação do Schedra
 
+O planejamento da próxima entrega foi revisado em 22/10/2026. Começar pela nova matriz de Arquitetura/Back-end/Tech Forge e pela gestão no Jira. O plano de reestruturação preserva as correções anteriores; as propostas e evidências históricas serão atualizadas junto das implementações.
+
 | Documento | Finalidade |
 | --- | --- |
+| [Nova entrega de arquitetura e backend](NOVA_ENTREGA_ARQUITETURA.md) | Rubrica recebida por imagem: C4, DDD, ADRs, Redis, Pub/Sub, Docker/Nginx, qualidade e Jira |
+| [Gestão no Jira](GESTAO_JIRA.md) | Site real, quadro SCHED, oito incrementos, histórias, critérios e vínculos; não confundir backlog com implementação |
+| [Persistencia local implementada](SQLITE_LOCAL.md) | SQLite, fotos BLOB, consultas offline, sessao, adaptador web e limites atuais |
+| [DER local SQLite](diagrams/schedra-local.dbml) | Onze tabelas locais e suas chaves; separado do banco central |
+| [Plano de reestruturação](PLANO_REESTRUTURACAO.md) | Componentização, SQLite, fotos locais, sincronização, revisão dos diagramas e 35 histórias em sete PRs |
+| [Rubrica de outubro](RUBRICA_OUTUBRO_2026.md) | Matriz atual de critérios, lacunas e evidências; inclui Jira, Cynefin e gestão de versões |
 | [Proposta principal](PROPOSTA.md) | Documento acadêmico consolidado das implementações futuras |
-| [Rastreabilidade da rubrica](RUBRICA_MOBILE_2026.md) | Separa documentação entregue de implementação futura |
+| [Rastreabilidade anterior](RUBRICA_MOBILE_2026.md) | Matriz da entrega anterior; não comprova atendimento à rubrica de outubro |
 | [Proposta de evolução](PRODUCT_EVOLUTION.md) | Lacunas, personas, solução futura e backlog |
 | [Requisitos futuros](REQUIREMENTS.md) | Requisitos e critérios de aceite das próximas implementações |
 | [Diagramas propostos](DIAGRAMS.md) | Arquitetura, dados e fluxos da evolução planejada |
