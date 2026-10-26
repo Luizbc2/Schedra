@@ -1,14 +1,29 @@
+const jsonSchema = (name: string) => ({ "application/json": { schema: { $ref: `#/components/schemas/${name}` } } });
+const clientMutation = { required: true, content: jsonSchema("ClientInput") };
+const clientUpdateMutation = { required: true, content: jsonSchema("ClientUpdate") };
+const clientResult = { description: "Cliente confirmado no banco", content: { "application/json": { schema: {
+  type: "object", properties: { message: { type: "string" }, client: { $ref: "#/components/schemas/Client" } },
+} } } };
+const errors = {
+  "400": { description: "Entrada invalida", content: jsonSchema("ApiError") },
+  "401": { description: "Sessao ausente, expirada ou revogada", content: jsonSchema("ApiError") },
+  "403": { description: "Sem permissao no tenant ativo", content: jsonSchema("ApiError") },
+  "429": { description: "Limite de requisicoes excedido", content: jsonSchema("ApiError") },
+};
+const idParameter = { in: "path", name: "id", required: true, schema: { type: "integer", minimum: 1 } };
 export const openApiDocument = {
   openapi: "3.1.0",
   info: {
     title: "Schedra API",
-    version: "2.2.0",
+    version: "2.3.0",
     description: "API multiempresa para agenda profissional e compromissos pessoais.",
   },
   servers: [{ url: "/" }],
   components: {
     securitySchemes: {
       bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      refreshCookie: { type: "apiKey", in: "cookie", name: "schedra_refresh" },
+      metricsAuth: { type: "http", scheme: "bearer", description: "Token operacional METRICS_TOKEN, diferente do JWT de usuario" },
     },
     schemas: {
       ApiError: {
@@ -17,7 +32,27 @@ export const openApiDocument = {
         properties: {
           code: { type: "string" },
           message: { type: "string" },
-          requestId: { type: "string", format: "uuid" },
+          requestId: { type: "string", maxLength: 128 },
+        },
+      },
+      ClientInput: {
+        type: "object", required: ["name"],
+        properties: {
+          name: { type: "string", minLength: 2, maxLength: 120 },
+          email: { type: "string", maxLength: 254, description: "Vazio ou email valido" },
+          phone: { type: "string", description: "Vazio ou telefone valido, normalizado pela API" },
+          cpf: { type: "string", description: "Vazio ou CPF valido; somente digitos apos normalizacao" },
+          notes: { type: "string", maxLength: 500, description: "Vazio ou pelo menos 3 caracteres" },
+        },
+      },
+      Client: { allOf: [{ $ref: "#/components/schemas/ClientInput" }, { type: "object", required: ["id"], properties: { id: { type: "integer", minimum: 1 } } }] },
+      ClientUpdate: { allOf: [{ $ref: "#/components/schemas/ClientInput" }, { type: "object", required: ["name", "email", "phone"], properties: { email: { type: "string", minLength: 1, format: "email" }, phone: { type: "string", minLength: 1 } } }] },
+      ClientPage: {
+        type: "object", required: ["data", "page", "limit", "totalItems", "totalPages"],
+        properties: {
+          data: { type: "array", items: { $ref: "#/components/schemas/Client" } },
+          page: { type: "integer", minimum: 1 }, limit: { type: "integer", minimum: 1, maximum: 100 },
+          totalItems: { type: "integer", minimum: 0 }, totalPages: { type: "integer", minimum: 1 },
         },
       },
       AppointmentMutation: {
@@ -54,12 +89,27 @@ export const openApiDocument = {
   paths: {
     "/health": { get: { summary: "Verifica a saúde da API", responses: { "200": { description: "API disponível" } } } },
     "/ready": { get: { summary: "Verifica a conexão com o banco", responses: { "200": { description: "API pronta" }, "503": { description: "Banco indisponível" } } } },
-    "/metrics": { get: { summary: "Expõe métricas Prometheus com token operacional", responses: { "200": { description: "Métricas da API" }, "401": { description: "Token operacional inválido" } } } },
-    "/api/auth/login": { post: { summary: "Cria uma sessão autenticada", responses: { "200": { description: "Sessão criada" }, "401": { description: "Credenciais inválidas" } } } },
-    "/api/auth/refresh": { post: { summary: "Rotaciona o refresh token", responses: { "200": { description: "Sessão renovada" }, "401": { description: "Refresh token inválido" } } } },
+    "/metrics": { get: { summary: "Expõe métricas Prometheus com token operacional", security: [{ metricsAuth: [] }], responses: { "200": { description: "Métricas da API" }, "401": { description: "Token operacional inválido" } } } },
+    "/api/auth/login": { post: { summary: "Cria uma sessão autenticada", parameters: [{ in: "header", name: "x-auth-client", schema: { type: "string", enum: ["web"] }, description: "Web recebe refresh em cookie HttpOnly; mobile recebe refreshToken no JSON" }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["email", "password"], properties: { email: { type: "string", format: "email" }, password: { type: "string", format: "password" } } } } } }, responses: { "200": { description: "Sessao criada: token JWT, usuario, contexto e refresh conforme tipo do cliente" }, ...errors } } },
+    "/api/auth/refresh": { post: { summary: "Rotaciona o refresh token", description: "Mobile envia refreshToken no JSON; web usa cookie HttpOnly schedra_refresh e x-auth-client web. Reuso de refresh revogado e rejeitado.", requestBody: { required: false, content: { "application/json": { schema: { type: "object", properties: { refreshToken: { type: "string" } } } } } }, responses: { "200": { description: "Sessão renovada" }, "401": { description: "Refresh token inválido" } } } },
     "/api/auth/logout": { post: { summary: "Revoga a sessão atual", security: [{ bearerAuth: [] }], responses: { "204": { description: "Sessão revogada" } } } },
     "/api/organizations": { get: { summary: "Lista organizações do usuário", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista de organizações" } } } },
-    "/api/clients": { get: { summary: "Lista clientes da organização ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } } },
+    "/api/clients": {
+      get: { summary: "Lista clientes da organizacao ativa ou do usuario", security: [{ bearerAuth: [] }],
+        description: "Exige clients:read. Cache Redis temporario por escopo; indisponibilidade usa SQL. Nao armazena autorizacao em cache.",
+        parameters: [
+          { in: "query", name: "page", schema: { type: "integer", minimum: 1, default: 1 } },
+          { in: "query", name: "limit", schema: { type: "integer", minimum: 1, maximum: 100, default: 6 } },
+          { in: "query", name: "search", schema: { type: "string", maxLength: 120 } },
+        ], responses: { "200": { description: "Pagina de clientes", content: jsonSchema("ClientPage") }, ...errors } },
+      post: { summary: "Cria cliente no tenant ativo", security: [{ bearerAuth: [] }], description: "Exige clients:write. Confirma SQL antes de invalidar cache/publicar evento.", requestBody: clientMutation, responses: { "201": clientResult, ...errors } },
+    },
+    "/api/clients/{id}": {
+      parameters: [idParameter],
+      get: { summary: "Consulta cliente autorizado diretamente no banco", security: [{ bearerAuth: [] }], responses: { "200": { description: "Objeto com propriedade client", content: { "application/json": { schema: { type: "object", required: ["client"], properties: { client: { $ref: "#/components/schemas/Client" } } } } } }, "404": { description: "Cliente nao encontrado no escopo" }, ...errors } },
+      put: { summary: "Atualiza cliente e invalida todas as suas paginas de cache", security: [{ bearerAuth: [] }], description: "Contrato atual de update exige email e telefone nao vazios, diferentemente de create.", requestBody: clientUpdateMutation, responses: { "200": clientResult, "404": { description: "Cliente nao encontrado no escopo" }, ...errors } },
+      delete: { summary: "Exclui cliente autorizado e invalida o cache", security: [{ bearerAuth: [] }], responses: { "200": { description: "Exclusao confirmada" }, "404": { description: "Cliente nao encontrado no escopo" }, ...errors } },
+    },
     "/api/professionals": { get: { summary: "Lista profissionais da organização ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } } },
     "/api/services": { get: { summary: "Lista serviços da organização ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } } },
     "/api/appointments": {
@@ -82,6 +132,6 @@ export const openApiDocument = {
       },
     },
     "/api/appointments/swap": { post: { summary: "Troca dois agendamentos de forma atômica", security: [{ bearerAuth: [] }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/AppointmentSwap" } } } }, responses: { "200": { description: "Agendamentos trocados" }, "409": { description: "Conflito de agenda ou versão" } } } },
-    "/api/users/me/avatar": { patch: { summary: "Valida, reencoda e atualiza o avatar", security: [{ bearerAuth: [] }], responses: { "200": { description: "Avatar atualizado" }, "413": { description: "Arquivo grande" }, "415": { description: "Conteúdo inválido" } } } },
+    "/api/users/me/avatar": { patch: { summary: "Valida, reencoda e atualiza o avatar", security: [{ bearerAuth: [] }], requestBody: { required: true, content: { "multipart/form-data": { schema: { type: "object", required: ["avatar"], properties: { avatar: { type: "string", format: "binary", description: "Um JPG/PNG/WEBP real, ate 5 MiB. Conteudo inspecionado e reencodado pela API." } } } } } }, responses: { "200": { description: "Avatar atualizado" }, "413": { description: "Arquivo grande" }, "415": { description: "Conteúdo inválido" }, ...errors } } },
   },
 } as const;

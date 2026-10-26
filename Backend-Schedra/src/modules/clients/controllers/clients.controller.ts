@@ -10,8 +10,9 @@ import { UpdateClientService } from "../services/update-client.service";
 import { getAuthenticatedUserId } from "../../auth/utils/auth-request.util";
 import { asNumber, asRequestBody, asString } from "../../../shared/http/request-parser";
 import { recordRequestAudit } from "../../../shared/http/request-audit";
+import { CachedClientRepository } from "../repositories/cached-client.repository";
 
-const clientRepository = new SequelizeClientRepository();
+const clientRepository = new CachedClientRepository(new SequelizeClientRepository());
 
 export class ClientsController {
   public async getById(request: Request, response: Response): Promise<Response> {
