@@ -97,14 +97,16 @@ try {
   for (let attempt = 0; attempt < 20; attempt++) {
     const up = await promQuery('up{job="schedra"}');
     const business = await promQuery('schedra_http_requests_total{job="schedra",route="/api/clients"}');
-    if (up[0]?.value[1] === '1' && business.length) {
-      evidence.checks.collector = { up: true, businessSeries: business.length };
+    const availability = await promQuery('schedra:business_availability:ratio5m');
+    if (up[0]?.value[1] === '1' && business.length && availability.length
+      && Number.isFinite(Number(availability[0].value[1]))) {
+      evidence.checks.collector = { up: true, businessSeries: business.length,
+        availabilityRatio: Number(availability[0].value[1]) };
       break;
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   assert.ok(evidence.checks.collector, 'Prometheus must actually scrape business metrics');
-  assert.ok((await promQuery('schedra:business_availability:ratio5m')).length > 0);
   const logs = spawnSync('docker', ['compose', '-p', project, '-f', 'compose.validation.yml', 'logs', '--no-color', '--no-log-prefix', 'backend'], { encoding: 'utf8', windowsHide: true });
   assert.equal(logs.status, 0);
   const events = logs.stdout.split('\n').flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } });
@@ -131,7 +133,15 @@ try {
   ]) {
     compose(['up', '-d', '--no-build', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '90', 'backend'], image);
     compose(['exec', '-T', 'nginx', 'nginx', '-s', 'reload']);
-    assert.equal((await http('/health')).body.release, release);
+    let healthy = false;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        healthy = (await http('/health')).body.release === release;
+        if (healthy) break;
+      } catch { /* The old proxy workers may still be draining during reload. */ }
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    assert.ok(healthy, 'Release readiness must match ' + release);
     assert.equal((await http(`/api/clients/${id}`, { headers })).response.status, 200);
     const persisted = await fetch('http://127.0.0.1:8090' + avatarUrl);
     assert.equal(persisted.status, 200);

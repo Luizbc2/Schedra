@@ -60,4 +60,18 @@ describe("HTTP safety middleware", () => {
     expect(unmatched).not.toContain("path-with-sensitive-input");
     expect(unmatched).toContain('route="_unmatched"');
   });
+  it("preserva o prefixo do router nas series de negocio", async () => {
+    resetMetricsForTests();
+    const app = express();
+    app.use(requestMetricsMiddleware);
+    const router = express.Router();
+    router.get("/", (_request, response) => response.json({ items: [] }));
+    router.get("/:id", (_request, response) => response.json({ id: 1 }));
+    app.use("/api/clients", router);
+    await request(app).get("/api/clients");
+    await request(app).get("/api/clients/17");
+    const metrics = renderPrometheusMetrics();
+    expect(metrics).toContain('route="/api/clients"');
+    expect(metrics).toContain('route="/api/clients/:id"');
+  });
 });

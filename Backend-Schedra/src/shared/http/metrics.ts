@@ -18,7 +18,8 @@ let activeRequests = 0;
 const normalizeRoute = (path: string): string => path
   .split("?")[0]
   .replace(/\/[0-9]+(?=\/|$)/g, "/:id")
-  .replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}(?=\/|$)/gi, "/:id");
+  .replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}(?=\/|$)/gi, "/:id")
+  .replace(/\/+$/, "") || "/";
 
 const escapeLabel = (value: string): string => value
   .replace(/\\/g, "\\\\")
