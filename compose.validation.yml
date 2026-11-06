@@ -24,7 +24,11 @@ services:
       timeout: 3s
       retries: 15
   backend:
-    build: ./Backend-Schedra
+    image: ${VALIDATION_BACKEND_IMAGE:-schedra-rubric-backend:baseline}
+    build:
+      context: ./Backend-Schedra
+      args:
+        SCHEDRA_RELEASE: qa-baseline
     environment:
       NODE_ENV: development
       PORT: "3333"
@@ -67,8 +71,22 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=1d
+    ports: ["127.0.0.1:9091:9090"]
+    volumes:
+      - ./infra/observability/prometheus.validation.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/schedra.rules.yml:/etc/prometheus/schedra.rules.yml:ro
+      - rubric_metrics:/prometheus
+    networks: [app]
+    depends_on:
+      backend: { condition: service_healthy }
 volumes:
   rubric_database:
+  rubric_metrics:
 networks:
   app:
   data:

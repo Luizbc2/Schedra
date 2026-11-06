@@ -26,6 +26,36 @@ export const openApiDocument = {
       metricsAuth: { type: "http", scheme: "bearer", description: "Token operacional METRICS_TOKEN, diferente do JWT de usuario" },
     },
     schemas: {
+      Health: {
+        type: "object", required: ["message", "status", "release"],
+        properties: { message: { type: "string" }, status: { const: "ok" }, release: { type: "string" } },
+      },
+      PersonalEventInput: {
+        type: "object", required: ["title", "startsAt", "endsAt"],
+        properties: {
+          title: { type: "string", minLength: 1, maxLength: 120 },
+          startsAt: { type: "string", format: "date-time" },
+          endsAt: { type: "string", format: "date-time", description: "Deve ser posterior ao inicio." },
+          location: { type: "string", default: "" }, notes: { type: "string", default: "" },
+          reminderMinutes: { type: "number", minimum: 0, maximum: 10080, default: 30,
+            description: "Preferencia armazenada; nao implica envio de notificacao implementado." },
+          completed: { type: "boolean", default: false },
+        },
+      },
+      PersonalEvent: {
+        allOf: [{ $ref: "#/components/schemas/PersonalEventInput" },
+          { type: "object", required: ["id"], properties: { id: { type: "integer", minimum: 1 } } }],
+      },
+      ServiceInput: {
+        type: "object", required: ["name", "category", "durationMinutes", "price"],
+        properties: {
+          name: { type: "string", minLength: 2, maxLength: 120 },
+          category: { type: "string", minLength: 2, maxLength: 80 },
+          durationMinutes: { type: "integer", minimum: 1, maximum: 1440 },
+          price: { type: "number", minimum: 0, maximum: 99999.99 },
+          description: { type: "string", maxLength: 500, description: "Vazio ou pelo menos cinco caracteres." },
+        },
+      },
       ApiError: {
         type: "object",
         required: ["code", "message", "requestId"],
@@ -87,7 +117,7 @@ export const openApiDocument = {
     },
   },
   paths: {
-    "/health": { get: { summary: "Verifica a saúde da API", responses: { "200": { description: "API disponível" } } } },
+    "/health": { get: { summary: "Verifica a saúde e identifica a versao implantada", responses: { "200": { description: "API disponivel", content: jsonSchema("Health") } } } },
     "/ready": { get: { summary: "Verifica a conexão com o banco", responses: { "200": { description: "API pronta" }, "503": { description: "Banco indisponível" } } } },
     "/metrics": { get: { summary: "Expõe métricas Prometheus com token operacional", security: [{ metricsAuth: [] }], responses: { "200": { description: "Métricas da API" }, "401": { description: "Token operacional inválido" } } } },
     "/api/auth/login": { post: { summary: "Cria uma sessão autenticada", parameters: [{ in: "header", name: "x-auth-client", schema: { type: "string", enum: ["web"] }, description: "Web recebe refresh em cookie HttpOnly; mobile recebe refreshToken no JSON" }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["email", "password"], properties: { email: { type: "string", format: "email" }, password: { type: "string", format: "password" } } } } } }, responses: { "200": { description: "Sessao criada: token JWT, usuario, contexto e refresh conforme tipo do cliente" }, ...errors } } },
@@ -111,7 +141,41 @@ export const openApiDocument = {
       delete: { summary: "Exclui cliente autorizado e invalida o cache", security: [{ bearerAuth: [] }], responses: { "200": { description: "Exclusao confirmada" }, "404": { description: "Cliente nao encontrado no escopo" }, ...errors } },
     },
     "/api/professionals": { get: { summary: "Lista profissionais da organização ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } } },
-    "/api/services": { get: { summary: "Lista serviços da organização ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } } },
+    "/api/services": {
+      get: { summary: "Lista servicos da organizacao ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" }, ...errors } },
+      post: { summary: "Cria servico no tenant ativo", security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: jsonSchema("ServiceInput") },
+        responses: { "201": { description: "Servico criado, propriedade service" }, ...errors } },
+    },
+    "/api/services/{id}": {
+      parameters: [idParameter],
+      get: { summary: "Consulta servico autorizado", security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "Objeto com propriedade service" }, "404": { description: "Servico nao encontrado" }, ...errors } },
+      put: { summary: "Atualiza servico autorizado", security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: jsonSchema("ServiceInput") },
+        responses: { "200": { description: "Servico atualizado" }, "404": { description: "Servico nao encontrado" }, ...errors } },
+      delete: { summary: "Exclui servico autorizado", security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "Servico excluido" }, "404": { description: "Servico nao encontrado" }, ...errors } },
+    },
+    "/api/personal-events": {
+      get: { summary: "Lista compromissos privados do usuario autenticado", security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "Lista privada", content: { "application/json": { schema: {
+          type: "object", required: ["items"], properties: {
+            items: { type: "array", items: { $ref: "#/components/schemas/PersonalEvent" } },
+          },
+        } } } }, ...errors } },
+      post: { summary: "Cria compromisso privado", security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: jsonSchema("PersonalEventInput") },
+        responses: { "201": { description: "Compromisso criado, propriedades message e event" }, ...errors } },
+    },
+    "/api/personal-events/{id}": {
+      parameters: [idParameter],
+      put: { summary: "Atualiza compromisso do proprio usuario", security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: jsonSchema("PersonalEventInput") },
+        responses: { "200": { description: "Compromisso atualizado, propriedades message e event" }, "404": { description: "Compromisso nao encontrado" }, ...errors } },
+      delete: { summary: "Exclui compromisso do proprio usuario", security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "Compromisso removido" }, "404": { description: "Compromisso nao encontrado" }, ...errors } },
+    },
     "/api/appointments": {
       get: { summary: "Lista agendamentos", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } },
       post: { summary: "Agenda um horário com proteção contra conflito", security: [{ bearerAuth: [] }], requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/AppointmentMutation" } } } }, responses: { "201": { description: "Agendamento criado" }, "409": { description: "Horário indisponível" } } },

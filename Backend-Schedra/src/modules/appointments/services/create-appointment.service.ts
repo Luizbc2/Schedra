@@ -18,6 +18,8 @@ import { ServiceRepository } from "../../services/repositories/service.repositor
 import { AppointmentConflictError } from "../errors/appointment-conflict.error";
 import { AppointmentAccessError } from "../errors/appointment-access.error";
 import { SchedulingPolicyService } from "./scheduling-policy.service";
+import { AppointmentInterval } from "../domain/appointment-interval";
+import { ServicePrice } from "../domain/service-price";
 
 type CreateAppointmentResponseDto = {
   appointment: AppointmentDto;
@@ -111,8 +113,17 @@ export class CreateAppointmentService {
       };
     }
 
-    const startsAt = new Date(scheduledAt);
-    const endsAt = new Date(startsAt.getTime() + service.durationMinutes * 60_000);
+    let interval: AppointmentInterval;
+    let price: ServicePrice;
+    try {
+      interval = AppointmentInterval.fromDuration(scheduledAt, service.durationMinutes);
+      price = ServicePrice.fromAmount(service.price);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      return { success: false, message: error.message, statusCode: 400 };
+    }
+    const startsAt = interval.startsAt;
+    const endsAt = interval.endsAt;
     const policy = await this.schedulingPolicy.validate(professionalId, serviceId, startsAt, endsAt);
     if (!policy.valid) return { success: false, message: policy.message, statusCode: 409 };
 
@@ -123,11 +134,11 @@ export class CreateAppointmentService {
         serviceId,
         scheduledAt,
         endsAt: endsAt.toISOString(),
-        durationMinutes: service.durationMinutes,
+        durationMinutes: interval.durationMinutes,
         clientNameSnapshot: client.name,
         professionalNameSnapshot: professional.name,
         serviceNameSnapshot: service.name,
-        priceSnapshot: service.price,
+        priceSnapshot: price.toAmount(),
         status,
         notes,
       });

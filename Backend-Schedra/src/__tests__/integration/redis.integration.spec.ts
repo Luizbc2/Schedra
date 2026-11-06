@@ -46,4 +46,14 @@ integration("Redis real (sem FLUSHDB)", () => {
     await Promise.race([consumed, new Promise((_resolve, reject) => setTimeout(() => reject(new Error("No consumption")), 2000).unref())]);
     expect(records.find(record => record.type === "event_published")?.eventId).toBe(records.find(record => record.type === "event_consumed")?.eventId);
   });
+  it("rajada de leituras identicas compartilha um SELECT com Redis real", async () => {
+    const load = jest.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return { value: 7 };
+    });
+    const values = await Promise.all(Array.from({ length: 20 }, () =>
+      cache.read("org:burst", { page: 1 }, load, valid)));
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(values).toEqual(Array.from({ length: 20 }, () => ({ value: 7 })));
+  });
 });

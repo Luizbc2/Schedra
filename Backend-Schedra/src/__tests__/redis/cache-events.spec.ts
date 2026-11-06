@@ -48,6 +48,46 @@ const setup = () => {
 };
 
 describe("Redis cache-aside", () => {
+  it("coalesce rajada identica sem compartilhar objetos mutaveis", async () => {
+    const { cache } = setup();
+    let release!: (value: { items: string[] }) => void;
+    const gate = new Promise<{ items: string[] }>(resolve => { release = resolve; });
+    let started!: () => void;
+    const ready = new Promise<void>(resolve => { started = resolve; });
+    const load = jest.fn(async () => { started(); return gate; });
+    const first = cache.read("org:1", query, load, valid);
+    await ready;
+    const rest = Array.from({ length: 19 }, () => cache.read("org:1", query, load, valid));
+    await new Promise(resolve => setImmediate(resolve));
+    release({ items: ["atual"] });
+    const results = await Promise.all([first, ...rest]);
+    expect(load).toHaveBeenCalledTimes(1);
+    results[0].items.push("mutacao");
+    expect(results[1].items).toEqual(["atual"]);
+  });
+  it("uma nova revisao nao adere ao SELECT antigo em andamento", async () => {
+    const { cache } = setup();
+    let release!: (value: { items: string[] }) => void;
+    let started!: () => void;
+    const ready = new Promise<void>(resolve => { started = resolve; });
+    const gate = new Promise<{ items: string[] }>(resolve => { release = resolve; });
+    const first = cache.read("org:1", query, async () => { started(); return gate; }, valid);
+    await ready;
+    await cache.invalidate("org:1");
+    expect(await cache.read("org:1", query, async () => ({ items: ["nova"] }), valid))
+      .toEqual({ items: ["nova"] });
+    release({ items: ["antiga"] });
+    await first;
+    expect(await cache.read("org:1", query, async () => ({ items: ["erro"] }), valid))
+      .toEqual({ items: ["nova"] });
+  });
+  it("erro de SELECT libera a chave para a proxima tentativa", async () => {
+    const { cache } = setup();
+    await expect(cache.read("org:1", query, async () => { throw new Error("DB down"); }, valid))
+      .rejects.toThrow("DB down");
+    expect(await cache.read("org:1", query, async () => ({ items: ["recuperado"] }), valid))
+      .toEqual({ items: ["recuperado"] });
+  });
   it("miss, hit e TTL; termos de busca nao aparecem nas chaves", async () => {
     const { cache, transport } = setup();
     const load = jest.fn(async () => ({ items: ["atual"] }));
