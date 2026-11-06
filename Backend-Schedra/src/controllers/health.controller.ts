@@ -7,7 +7,8 @@ export class HealthController {
   public check(_request: Request, response: Response): Response {
     return response.status(200).json({
       message: "API do Schedra em execução.",
-      status: "ok"
+      status: "ok",
+      release: process.env.SCHEDRA_RELEASE || "development",
     });
   }
 

@@ -1,5 +1,5 @@
 import { UpdateUserProfileService } from "../../modules/users/services/update-user-profile.service";
-import { comparePassword } from "../../modules/auth/utils/password.util";
+import { comparePassword, hashPassword } from "../../modules/auth/utils/password.util";
 import { InMemoryUserRepository } from "../mocks/in-memory-user.repository";
 
 describe("UpdateUserProfileService", () => {
@@ -113,6 +113,7 @@ describe("UpdateUserProfileService", () => {
   });
 
   it("atualiza o proprio perfil sem trocar o e-mail e com senha criptografada", async () => {
+    const currentPassword = await hashPassword("SenhaAtual1!");
     const repository = new InMemoryUserRepository({
       users: [
         {
@@ -120,7 +121,7 @@ describe("UpdateUserProfileService", () => {
           name: "Maria",
           email: "maria@schedra.com",
           cpf: "52998224725",
-          password: "hash",
+          password: currentPassword,
         },
       ],
     });
@@ -132,6 +133,7 @@ describe("UpdateUserProfileService", () => {
       name: "  Maria Atualizada  ",
       email: "maria@schedra.com",
       cpf: "111.444.777-35",
+      currentPassword: "SenhaAtual1!",
       password: "Senha123!",
     });
 
@@ -147,10 +149,40 @@ describe("UpdateUserProfileService", () => {
       email: "maria@schedra.com",
       cpf: "11144477735",
       accountType: "business",
+      role: "user",
+      active: true,
       avatarUrl: null,
     });
     await expect(comparePassword("Senha123!", repository.lastUpdatedInput?.password ?? "")).resolves.toBe(true);
     expect(result.passwordChanged).toBe(true);
+  });
+
+  it("recusa a troca quando a senha atual está incorreta", async () => {
+    const repository = new InMemoryUserRepository({
+      users: [{
+        id: 1,
+        name: "Maria",
+        email: "maria@schedra.com",
+        cpf: "52998224725",
+        password: await hashPassword("SenhaAtual1!"),
+      }],
+    });
+
+    const result = await new UpdateUserProfileService(repository).execute({
+      authenticatedUserId: 1,
+      userId: 1,
+      name: "Maria",
+      email: "maria@schedra.com",
+      cpf: "52998224725",
+      currentPassword: "SenhaErrada1!",
+      password: "SenhaNova1!",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      message: "Senha atual incorreta.",
+      statusCode: 401,
+    });
   });
 
   it("atualiza dados pessoais sem obrigar a troca de senha", async () => {
