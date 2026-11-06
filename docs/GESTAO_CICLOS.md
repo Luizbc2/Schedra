@@ -74,4 +74,26 @@ Esta e revisao tecnica observada no ciclo, nao feedback aprovado de uma equipe
 ou professor. As incertezas de aparelho, producao, prazo final e aceite continuam
 visiveis; nao foram convertidas em eventos Scrum ficticios.
 
+## Planejamento futuro autorizado em 06/11
+
+Depois da consolidacao tecnica, Luiz pediu organizar as proximas sprints sem
+inventar antigas. Informou apresentacao por volta de dia 23, sem certeza da data.
+O calendario usa 23/11 como referencia provisoria, com Sprint 1 em 09-15/11 e
+Sprint 2 em 16-22/11. Sao planos futuros, nao ciclos ja executados ou concluidos.
+
+O processo anterior permanece descrito como incremental/Kanban. A partir desta
+decisao, dois ciclos futuros recebem objetivos, selecao de trabalho, dependencias
+e criterios de saida; isso nao transforma o passado em Scrum completo. Nao foram
+inventados Scrum Master, equipe, estimativas, dailies ou retrospectivas.
+
+Sprint 0 foi encerrada hoje com os estados reais dos dois itens pendentes
+registrados, sem retroagir datas. SCHED-1/SCHED-2 foram transportados. O backlog
+de evolucao offline continua separado. O novo SCHED-57 explicita a integracao de
+dev, gate da homologacao; os PRs nao foram integrados por este planejamento.
+
+Revisao de cada ciclo deve comparar objetivo e aceite com o resultado real,
+identificar o que sera transportado e registrar uma melhoria concreta. Concluir
+issues/versoes depende desse aceite, nao do fim da data planejada.
+Detalhes/IDs e regras operacionais em [GESTAO_JIRA.md](GESTAO_JIRA.md).
+
 Referencias: [Cynefin](https://thecynefin.co/about-us/about-cynefin-framework/), [Jira Schedra](https://schedra-luiz.atlassian.net/jira/software/projects/SCHED/boards/1), [PR #42](https://github.com/Luizbc2/Schedra/pull/42), [PR #43](https://github.com/Luizbc2/Schedra/pull/43).

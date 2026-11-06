@@ -1,6 +1,6 @@
 # Gestão da nova entrega no Jira
 
-Atualizado em 22/10/2026. Site criado e conexão autorizada pelo proprietário. Esta página registra configuração e planejamento; não atesta implementação das funcionalidades.
+Atualizado em 06/11/2026. Site criado e conexão autorizada pelo proprietário. Esta página registra configuração e planejamento; não atesta implementação das funcionalidades.
 
 ## Acesso
 
@@ -14,6 +14,49 @@ Atualizado em 22/10/2026. Site criado e conexão autorizada pelo proprietário. 
 - Todas as versões R01-R08 estão **não lançadas**.
 
 ## Organização
+
+### Proximas sprints para fechar a rubrica
+
+Planejamento autorizado por Luiz em 06/11/2026. Apresentacao informada como
+aproximadamente dia 23: **23/11 e referencia provisoria, nao prazo confirmado**.
+Nao foram criadas sprints antigas nem registradas reunioes que nao ocorreram.
+
+| Sprint | Periodo planejado (Sao Paulo) | Objetivo / tickets |
+| --- | --- | --- |
+| Sprint 1 - Arquitetura e API (id 1) | 09/11, 09h a 15/11, 18h | Revisar arquitetura/diagramas/Cynefin, completar contratos/upload e integrar base em dev. SCHED-1, 3, 34, 45, 46, 47, 55, 57 |
+| Sprint 2 - Validacao e entrega (id 3) | 16/11, 09h a 22/11, 18h | Homologar Redis/eventos/proxy/metricas, avatar em aparelho, implantacao/retorno e versao/evidencias. SCHED-2, 44, 48, 49, 50, 51, 52, 53, 54, 56 |
+
+As duas estao **futuras**, com 8 e 10 itens, respectivamente. Iniciar apenas no
+comeco real do ciclo; por enquanto aparecem no Backlog, nao em um quadro ativo.
+E planejamento proposto a revisar conforme capacidade/prazo confirmado, sem
+pontos ou horas inventados. Limite operacional proposto: dois itens em execucao
+simultanea, sem mudar retroativamente os estados reais ja existentes.
+
+Sprint 0 (id 2) foi encerrada administrativamente em 06/11/2026, preservando
+inicio 22/10 e termino previsto 05/11. Tinha SCHED-1 em analise e SCHED-2 em
+andamento, **0/2 concluidos**. Ambos foram transportados, sem declarar entrega
+ou cerimonia ocorrida. O registro de fechamento esta em SCHED-2/SCHED-54.
+
+[SCHED-57](https://schedra-luiz.atlassian.net/browse/SCHED-57) foi criada para
+revisar/integrar #41/#42/#43/#44 em dev e identificar o SHA aprovado para
+homologacao. Ela bloqueia as verificacoes integradas da segunda sprint.
+SCHED-47/48/52 bloqueiam a entrega continua em SCHED-49; revisao de arquitetura,
+DDD, deploy e avatar bloqueiam a liberacao final em SCHED-44.
+
+Cada item selecionado recebeu trabalho restante, entrada, criterio de saida e
+evidencia esperada na descricao, preservando o escopo anterior como historico.
+SCHED-34 foi alinhada ao armazenamento atual em memoria + destino duravel,
+sem reintroduzir diskStorage como obrigacao.
+
+SCHED-25 a 32 continuam no backlog com `evolucao-fora-rubrica`: CRUD offline,
+idempotencia e conflitos nao viraram condicoes artificiais para fechar o recorte
+atual. As demais historias de apoio continuam visiveis e nao foram encerradas.
+Versoes R01-R08 permanecem nao lancadas. Planejar sprints nao autoriza merge,
+contratacao, producao, aceite docente ou conclusao de tarefas.
+
+Os epicos de planejamento, SQLite, Redis, operacao e arquitetura foram alinhados
+para Em andamento em 06/11 porque ja possuem trabalho tecnico real em revisao;
+isso nao reescreve suas datas nem conclui o agrupamento.
 
 A [nova matriz](NOVA_ENTREGA_ARQUITETURA.md) define a ordem vigente de oito incrementos. Os IDs SC-01 a SC-35 do plano anterior foram preservados, mas agrupados na nova sequência; a numeração antiga de sete PRs não é mais a ordem de execução.
 
