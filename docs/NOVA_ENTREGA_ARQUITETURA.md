@@ -92,7 +92,17 @@ Concluído: código integrado, testes adequados, evidência ligada à história,
 
 ## Registro de execução
 
-Atualizacao em 26/10/2026: R02/R03 tem controles, SQLite e fotos no PR #42. O [PR #43](https://github.com/Luizbc2/Schedra/pull/43) adiciona cache Redis, Pub/Sub, histograma, OpenAPI exportavel, stack isolada, C4/DDD/ADRs e cenarios. O CI de referencia aprovou quatro jobs, com 104 testes backend e verificacao real dos containers. Consultar a [avaliacao ponderada e lacunas](AVALIACAO_NOVA_ENTREGA.md). Os checks abaixo representam a entrega integral e aceita, nao apenas a existencia da base. Nenhum PR foi integrado em main nesta rodada.
+Atualizacao em 06/11/2026: R02/R03 tem controles, SQLite e fotos no PR #42.
+O [PR #43](https://github.com/Luizbc2/Schedra/pull/43) adiciona Redis, eventos e
+arquitetura. O [PR #44](https://github.com/Luizbc2/Schedra/pull/44) consolida VOs,
+coalescencia, coletor real, carga pequena, upload e rollback isolados. O
+[CI 42209605266](https://github.com/Luizbc2/Schedra/actions/runs/42209605266)
+aprovou cinco jobs e 125 testes backend sem ignorados; o artefato tem passed=true.
+Autoavaliacao atual: 7,2/9 (~80%), nao nota garantida.
+Consultar [avaliacao e lacunas](AVALIACAO_NOVA_ENTREGA.md) e
+[roteiro operacional](VALIDACAO_OPERACIONAL.md). Os checks abaixo representam
+entrega integral aceita, nao apenas codigo/testes prontos em PR. Nenhum PR foi
+integrado em main nesta rodada.
 
 - [x] Interpretar todos os critérios visíveis e mapear entregáveis.
 - [x] Inspecionar baseline e preservar alterações existentes.

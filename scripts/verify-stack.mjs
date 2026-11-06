@@ -151,6 +151,7 @@ try {
   assert.equal((await http(`/api/clients/${id}`, { method: 'DELETE', headers })).response.status, 200);
   evidence.passed = true;
   writeFileSync('artifacts/stack-evidence.json', JSON.stringify(evidence, null, 2) + '\n');
+  console.log(JSON.stringify({ evidence }));
   console.log(JSON.stringify({ passed: true, proxy: true, readiness: true, protectedMetrics: true, redisOptional: true, databaseRestart: true }));
 } finally {
   writeFileSync('artifacts/stack-evidence.json', JSON.stringify(evidence, null, 2) + '\n');

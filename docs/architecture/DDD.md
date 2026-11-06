@@ -1,6 +1,6 @@
 # Dominios, contextos e modelo de Agenda
 
-Modelo aplicado ao codigo em 26/10/2026. DDD aqui organiza linguagem e consistencia; nao significa que cada contexto seja um microsservico ou que toda tabela seja um agregado.
+Modelo revisado em 06/11/2026. DDD aqui organiza linguagem e consistencia; nao significa que cada contexto seja um microsservico ou que toda tabela seja um agregado.
 
 ## Dominios e limites
 
@@ -80,7 +80,9 @@ classDiagram
   Agendamento "1" *-- "0..*" TransicaoDeStatus
 ```
 
-**Value Objects do modelo:** intervalo de tempo (inicio/fim/duracao), valor monetario do snapshot e conjunto de nomes capturados. Sao valores sem identidade propria. **Representacao atual:** campos Date/number/string no DTO e model Sequelize; nao existem classes imutaveis chamadas `Intervalo` ou `SnapshotDoAtendimento` no codigo. O diagrama mostra o agrupamento de dominio, nao inventa classes implementadas. Uma refatoracao para VOs explicitos deve preservar os contratos e receber testes proprios.
+**Value Objects implementados:** `AppointmentInterval` e `ServicePrice`, em `modules/appointments/domain`. O primeiro representa inicio/fim em milissegundos e duracao inteira positiva, devolve copias de Date e usa intervalos semiabertos: um horario que acaba as 10h nao conflita com outro que comeca as 10h. O segundo representa preco nao negativo em centavos inteiros seguros e rejeita mais de duas casas decimais. Ambos sao congelados e possuem igualdade por valor, sem ID.
+
+`CreateAppointmentService` constroi os VOs antes de validar a jornada e grava os valores primitivos no Repository. Datas invalidas, overflow, duracao invalida e preco invalido nao chegam a persistencia. Os DTOs HTTP e o schema relacional nao mudam. Testes: `__tests__/appointments/domain-values.spec.ts`, incluindo uso real pelo service. Nao foi transformado todo model Sequelize em dominio puro: update/swap ainda usam representacoes primitivas; o snapshot de nomes do diagrama acima continua um agrupamento conceitual, nao uma classe implementada.
 
 ## Invariantes e fronteira transacional
 
@@ -95,4 +97,4 @@ classDiagram
 
 Criacao/update/swap usam transacao SERIALIZABLE; update bloqueia a raiz, libera/reserva slots e grava historico antes do commit. Trocar dois agendamentos amplia excepcionalmente a transacao para duas raizes, porque a invariante de reserva exige atomicidade; isso e uma escolha de consistencia do monolito, nao independencia absoluta dos agregados.
 
-Limites ainda abertos: regras consultadas em outras tabelas nao constituem um modelo de dominio puro; a verificacao de data passada possui alteracoes locais anteriores que devem entrar em PR proprio antes de se afirmar sua liberacao. CRUD offline com reconciliacao, VO explicito e eventos duraveis permanecem futuros.
+Limites ainda abertos: regras consultadas em outras tabelas nao constituem um modelo de dominio puro; a verificacao de data passada possui alteracoes locais anteriores que devem entrar em PR proprio antes de se afirmar sua liberacao. CRUD offline com reconciliacao, adocao dos VOs em update/swap e eventos duraveis permanecem futuros.

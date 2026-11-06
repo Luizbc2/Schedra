@@ -45,4 +45,17 @@ Logs de eventos tem `type`, `eventId`, `eventType`, `requestId` e numero de assi
 
 Testes novos em `src/__tests__/redis/cache-events.spec.ts` e `src/__tests__/integration/redis.integration.spec.ts`. A integracao real usa DB Redis 10-15, prefixo UUID e nunca FLUSHDB. CI adiciona Redis e PostgreSQL reais. A stack isolada testa Nginx, health/readiness, autorizacao, CRUD com Redis desligado e reinicio do banco.
 
-Ainda nao ha historico de 30 dias, coletor Prometheus/Grafana implantado, teste de carga representativo ou aceite formal dos riscos de dependencias. O controle de requisicoes ativas usa finish; cancelamentos abruptos e instrumentacao distribuida devem ser ampliados antes de considerar observabilidade completa.
+Em 06/11, o incremento #44 adiciona Prometheus ao perfil isolado: scrape com Bearer
+operacional, regras de disponibilidade/p95 e alertas locais. O smoke consulta o
+coletor e so aceita depois de haver amostra real do target e da rota de clientes,
+alem da recording rule. A normalizacao de rota remove barra final, com teste de
+router aninhado para nao quebrar seletores PromQL.
+
+O ensaio gera 80 leituras/concorrencia 5 e 20 escritas/concorrencia 2 pelo proxy;
+guarda p95 nearest rank, erros e tempo no artefato. Metas propostas viram gates
+dessa pequena carga. Nao ha historico mensal ou evidencia de carga prolongada
+representativa de producao. Nao ha Grafana/Alertmanager implantado nem aceite
+formal dos riscos upstream. O controle de requisicoes ativas usa finish;
+cancelamentos abruptos e instrumentacao distribuida continuam pendentes.
+
+Roteiro, contrato do artefato e limites: [validacao operacional](../VALIDACAO_OPERACIONAL.md).

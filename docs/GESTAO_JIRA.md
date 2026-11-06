@@ -129,6 +129,26 @@ Pelo navegador, foram registrados comentarios verificaveis com PR, CI, limites e
 
 Consultar [avaliacao ponderada](AVALIACAO_NOVA_ENTREGA.md) e [registro de ciclos](GESTAO_CICLOS.md). A faixa estimada de 60-65% nao e nota ou aceite docente. Revisao humana, homologacao e release continuam pendentes; nao houve merge em main nem deploy de producao nesta rodada.
 
+### Consolidacao operacional em 06/11/2026
+
+PR [#44](https://github.com/Luizbc2/Schedra/pull/44), dependente de #43/#42/#41.
+O [CI 42209605266](https://github.com/Luizbc2/Schedra/actions/runs/42209605266)
+aprovou cinco jobs e 125 testes backend sem ignorados. O artefato comprovou
+upload pelo proxy, carga pequena, coleta Prometheus e rollback de configuracao
+preservando dados. Autoavaliacao atual em AVALIACAO_NOVA_ENTREGA.md: 7,2/9 (~80%),
+nao nota do professor.
+
+O conector foi usado com sucesso para ler os dez tickets tecnicos, registrar
+evidencias em SCHED-46 a 53 e mover SCHED-46/48/49/52/53 para Em analise. SCHED-49
+primeiro passou por Em andamento, registrando a retomada real. SCHED-47/50/51
+ja estavam em analise. SCHED-54 recebeu plano e revisao tecnica do ciclo e
+continua em andamento ate aceite/release. Nenhuma tarefa foi marcada concluida.
+
+Sprint 0 permanecia ativa com data prevista de termino em 05/11. A divergencia
+foi registrada em SCHED-54; nao houve mudanca retroativa de datas ou alegacao de
+cerimonia/aceite humano. O replanejamento da sprint continua com o responsavel.
+Reproducao e limites em [VALIDACAO_OPERACIONAL.md](VALIDACAO_OPERACIONAL.md).
+
 ### Incremento local R03 em 26/10/2026
 
 SQLite, adaptador web, escopos, migracao de sessao, consultas locais e fotos BLOB com fila de envio foram implementados. Evidencias, caminhos e limites estao em [SQLITE_LOCAL.md](SQLITE_LOCAL.md); o DER local foi derivado do SQL real. [PR #42](https://github.com/Luizbc2/Schedra/pull/42) em rascunho para dev, precedido do [alinhamento de base #41](https://github.com/Luizbc2/Schedra/pull/41). Ainda faltam CRUD de negocio offline, revisao e verificacao em aparelhos; main e producao permanecem sem este incremento.

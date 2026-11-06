@@ -37,4 +37,41 @@ Luiz e o responsavel pelo projeto e titular das issues ja atribuidas no Jira. Co
 
 Este registro e uma analise tecnica do ciclo, nao uma retrospectiva aprovada por equipe. Proximo passo de gestao: revisar os PRs/aceites, homologar dev e registrar feedback e decisao reais. So entao concluir issues e preparar PR de release para main.
 
+## Retomada em 06/11 - consolidacao operacional
+
+Pedido real do responsavel: elevar a cobertura para aproximadamente 80%. O
+incremento [#44](https://github.com/Luizbc2/Schedra/pull/44) saiu de uma copia
+limpa da branch anterior, preservando alteracoes locais de agenda/configuracao.
+Dependencias #41/#42/#43 permanecem abertas; nao houve merge nem release produtiva.
+
+Aplicacao de Cynefin no ciclo:
+
+| Trabalho observado | Decisao de gestao | Como testar a decisao |
+| --- | --- | --- |
+| Limites de upload conhecidos (claro) | Automatizar o checklist por proxy, sem redesenhar upload | Arquivo real, disfarce e dois limites de tamanho |
+| Stampede, TTL e revisao concorrente (complicado) | Analisar escopo/revisao; coalescencia limitada ao processo, sem lock distribuido prematuro | Rajada real Redis, falha do SELECT e invalidacao intercalada |
+| Infra local indisponivel (complicado) | Executar stack descartavel no CI; nao resetar Docker/volumes do responsavel | Logs do runner, artefato e cinco jobs independentes |
+| Experiencia offline em aparelho (complexo) | Manter incremento e hipotese separados do aceite; nao extrapolar teste Chrome | Validacao fisica continua pendente, sem promover historia a concluida |
+
+Revisao tecnica realizada: o primeiro ensaio local de prefixo de metricas falhou
+porque Express registrava /api/clients/ com barra final. A correcao passou a
+normalizar o template e recebeu teste de regressao. O primeiro job de containers
+tambem detectou esse seletor, sem remover o gate. A espera pelo coletor e pela
+readiness da candidata passou a ser limitada e explicita, em vez de presumir que
+o start de um processo equivale a amostra disponivel.
+
+Melhoria decorrente: toda regra PromQL precisa de pelo menos um teste contra os
+rotulos produzidos e uma consulta ao coletor real. Carga e rollback passam a gerar
+um artefato JSON reprodutivel; so passed=true e evidencia integral.
+
+Jira foi consultado na retomada; SCHED-49 saiu de tarefas pendentes para em
+andamento e SCHED-54 recebeu plano/PR/CI. A sprint 0 continuava ativa com termino
+previsto em 05/11; esse desvio foi registrado, sem inventar encerramento,
+cerimonia ou alterar retroativamente datas. Consolidacao/replanejamento da sprint
+e aceite de produto continuam com o responsavel.
+
+Esta e revisao tecnica observada no ciclo, nao feedback aprovado de uma equipe
+ou professor. As incertezas de aparelho, producao, prazo final e aceite continuam
+visiveis; nao foram convertidas em eventos Scrum ficticios.
+
 Referencias: [Cynefin](https://thecynefin.co/about-us/about-cynefin-framework/), [Jira Schedra](https://schedra-luiz.atlassian.net/jira/software/projects/SCHED/boards/1), [PR #42](https://github.com/Luizbc2/Schedra/pull/42), [PR #43](https://github.com/Luizbc2/Schedra/pull/43).

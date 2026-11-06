@@ -34,7 +34,7 @@ Data: 26/10/2026. Estado: adotadas no codigo da branch; revisao e release ainda 
 
 **Alternativas:** DEL por chave desconhece todas as buscas; KEYS/SCAN em cada escrita aumenta custo; incrementar revisao com fallback zero permite reutilizar namespace antigo apos eviction. UUID impede reutilizacao acidental da revisao.
 
-**Consequencias:** chaves antigas expiram sozinhas; uma chave de revisao por escopo permanece ate eviction. Pode haver stampede em miss; coalescencia distribuida fica futura. Falha de invalidacao pode manter leitura antiga ate o TTL; Redis nao e fonte de autorizacao. Deadline, circuito e fallback preservam o CRUD no banco. Testes cobrem concorrencia, TTL, parametros e tenants.
+**Consequencias:** chaves antigas expiram sozinhas; uma chave de revisao por escopo permanece ate eviction. Desde 06/11, misses identicos compartilham o SELECT dentro do processo (ADR-005); coalescencia entre processos permanece futura. Falha de invalidacao pode manter leitura antiga ate o TTL; Redis nao e fonte de autorizacao. Deadline, circuito e fallback preservam o CRUD no banco. Testes cobrem concorrencia, TTL, parametros e tenants.
 
 ## ADR-004 - Pub/Sub para eventos observaveis, nao fila duravel
 
@@ -47,3 +47,23 @@ Data: 26/10/2026. Estado: adotadas no codigo da branch; revisao e release ainda 
 **Consequencias:** entrega at-most-once; evento pode ser perdido ao desconectar, ao falhar publish ou entre commit e publish. Isso nao reverte escrita confirmada nem substitui a fila SQLite de fotos. Consumo continuo em serverless nao e garantido. Notificacoes de usuario e efeitos de negocio criticos exigirao outbox/replay futuro.
 
 Referencia: [semantica oficial Redis Pub/Sub](https://redis.io/docs/latest/develop/pubsub/).
+
+## ADR-005 - Coalescencia local limitada e revisada
+
+**Contexto:** uma rajada de misses identicos podia iniciar SELECTs simultaneos. Uma unica promise por termo de busca, sem tenant/revisao, misturaria dados ou reaproveitaria uma leitura anterior a uma escrita.
+
+**Decisao (06/11):** a chave completa ja inclui escopo, revisao e hash. No maximo 128 chaves em voo sao coalescidas por processo. A consulta sai do mapa em finally, inclusive com erro; cada seguidor recebe uma copia do resultado. Uma invalidacao muda a chave e nao adere ao SELECT antigo. Redis indisponivel continua com fallback SQL direto.
+
+**Alternativas:** lock distribuido exige TTL/renovacao e tratamento de dono morto; nao foi adicionado por falta de necessidade medida. Guardar resultado indefinidamente em memoria seria outro cache e esconderia invalidacao externa.
+
+**Consequencias:** reduz stampede no mesmo processo, nao garante SELECT unico entre replicas. Ao atingir o limite, consulta normalmente sem acumular novas entradas. O timeout do SQL continua responsabilidade do driver; nao se mascara falha SQL como acerto de cache. Suites fake e Redis real verificam 20 leituras para um SELECT, invalidacao durante carga e recuperacao apos erro.
+
+## ADR-006 - Observabilidade e ensaio de implantacao isolados
+
+**Contexto:** contadores sem coletor e um runbook sem exercicio nao comprovavam a operacao. Nao ha aprovacao para mudar infraestrutura produtiva ou contratar servicos.
+
+**Decisao (06/11):** Compose de validacao inclui Prometheus com volume e retencao de um dia; scrape autenticado, regras de disponibilidade/p95 e alertas locais. CI testa 80 leituras/5 concorrentes e 20 escritas/2 concorrentes pelo Nginx, registra p95/erros em JSON e verifica upload. Constroi candidata de configuracao, substitui API e restaura imagem anterior preservando cliente/avatar.
+
+**Alternativas:** medir somente o service omite HTTP/proxy/auth; apontar carga para Vercel alteraria um ambiente real. Implantar Grafana/Alertmanager agora aumentaria o escopo sem fechar a coleta basica.
+
+**Consequencias:** evidencia reproduzivel de pequena carga, nao capacidade de producao ou disponibilidade de 30 dias. Alertas sao avaliados no coletor, sem canal de notificacao externo. Credenciais sinteticas ficam apenas no perfil isolado; Prometheus tem bind loopback. Rollback de uma configuracao na mesma revisao de fonte nao comprova compatibilidade entre quaisquer releases/schema.

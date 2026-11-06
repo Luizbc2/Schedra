@@ -1,6 +1,6 @@
 # Arquitetura atual do Schedra
 
-Revisao de 26/10/2026. Diagramas abaixo descrevem o codigo desta branch, nao uma promessa de microsservicos. Os modelos antigos de evolucao continuam sendo propostas. Referencias: [C4](https://c4model.com/diagrams), [dominio e contextos](DDD.md), [decisoes](ADRS.md), [qualidade](QUALITY.md), [operacao Redis](../REDIS_OPERACAO.md).
+Revisao de 06/11/2026. Diagramas abaixo descrevem o codigo desta branch, nao uma promessa de microsservicos. Os modelos antigos de evolucao continuam sendo propostas. Referencias: [C4](https://c4model.com/diagrams), [dominio e contextos](DDD.md), [decisoes](ADRS.md), [qualidade](QUALITY.md), [operacao Redis](../REDIS_OPERACAO.md).
 
 ## C4 - Contexto
 
@@ -32,6 +32,7 @@ C4Container
     Container(api, "API modular", "Express / TypeScript", "Autentica, autoriza e executa regras de negocio")
     ContainerDb(db, "Banco central", "PostgreSQL ou MySQL / Sequelize", "Fonte de verdade compartilhada e controle de acesso")
     ContainerDb(redis, "Cache e eventos", "Redis", "Cache temporario de clientes e Pub/Sub sem durabilidade")
+    Container(metrics, "Coletor de validacao", "Prometheus", "Consulta metricas autenticadas, avalia regras e guarda series por um dia")
   }
   Rel(user, mobile, "Usa")
   Rel(user, web, "Usa", "Navegador")
@@ -42,6 +43,7 @@ C4Container
   Rel(proxy, web, "Busca assets", "HTTP interno")
   Rel(api, db, "Le e grava dados autorizados", "SQL via driver")
   Rel(api, redis, "Cache e publicacao/assinatura", "TCP / RESP")
+  Rel(metrics, api, "Consulta /metrics com token operacional", "HTTP interno")
 ```
 
 No Expo Web, IndexedDB substitui SQLite nativo. Tokens nativos ficam no SecureStore, fora do SQLite. O banco central suporta dois dialetos; a stack de validacao usa PostgreSQL 16. Nao se infere o banco de producao a partir desse perfil. Redis nao armazena permissoes nem decide disponibilidade de horarios.
