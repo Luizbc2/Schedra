@@ -106,6 +106,9 @@ test('health independente; readiness representa assinante; activity e metricas e
   const app = await serve(store, processor, () => ready);
   try {
     assert.equal((await fetch(app.origin + '/health')).status, 200);
+    const spec = await (await fetch(app.origin + '/openapi.json')).json();
+    assert.equal(spec.openapi, '3.1.0');
+    assert.ok(spec.paths['/activity'].get.security);
     assert.equal((await fetch(app.origin + '/ready')).status, 503);
     ready = true;
     assert.equal((await fetch(app.origin + '/ready')).status, 200);

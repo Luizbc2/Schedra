@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
 import type { ActivityStore } from './store.js';
 import type { EventProcessor } from './processor.js';
+import { openapi } from './openapi.js';
 
 export function operationalServer(store: ActivityStore, processor: EventProcessor,
   subscriberReady: () => boolean, token: string) {
@@ -19,6 +20,7 @@ export function operationalServer(store: ActivityStore, processor: EventProcesso
     }
     try {
       const path = new URL(request.url || '/', 'http://events').pathname;
+      if (path === '/openapi.json') { json(200, openapi); return; }
       if (path === '/health') {
         json(200, { service: 'event-activity', status: 'alive', release: process.env.SCHEDRA_RELEASE || 'development' });
         return;

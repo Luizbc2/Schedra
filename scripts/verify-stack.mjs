@@ -11,8 +11,20 @@ const compose = (args, image) => {
   });
   assert.equal(result.status, 0, `Compose ${args[0]} failed`);
 };
+const stackFetch = async (path, init = {}) => {
+  // Proxy reloads deliberately drain sockets; each probe needs a fresh connection.
+  const headers = new Headers(init.headers);
+  headers.set('Connection', 'close');
+  try {
+    return await fetch(`http://127.0.0.1:8090${path}`, {
+      ...init, headers, signal: AbortSignal.timeout(15000),
+    });
+  } catch (cause) {
+    throw new Error(`Stack probe failed: ${init.method || 'GET'} ${path}`, { cause });
+  }
+};
 const http = async (path, init) => {
-  const response = await fetch(`http://127.0.0.1:8090${path}`, { ...init, signal: AbortSignal.timeout(15000) });
+  const response = await stackFetch(path, init);
   return { response, body: await response.json() };
 };
 const capture = args => {
@@ -38,7 +50,7 @@ const activity = async () => {
 };
 const countActivity = async type => (await activity()).find(item => item.type === type)?.count || 0;
 const eventsMetrics = async () => {
-  const response = await fetch('http://127.0.0.1:8090/ops/events/metrics', { headers: eventsHeaders });
+  const response = await stackFetch('/ops/events/metrics', { headers: eventsHeaders });
   assert.equal(response.status, 200);
   return response.text();
 };
@@ -57,7 +69,7 @@ try {
   assert.equal((await http('/ops/events/ready')).response.status, 200);
   assert.equal((await http('/ops/events/activity')).response.status, 401);
   assert.equal((await http('/ops/events/metrics')).response.status, 401);
-  const web = await fetch('http://127.0.0.1:8090', { signal: AbortSignal.timeout(15000) });
+  const web = await stackFetch('/');
   assert.ok(web.ok && (await web.text()).includes('<div id="root">'));
   const spec = await http('/api/docs/openapi.json');
   assert.equal(spec.body.openapi, '3.1.0');
@@ -71,7 +83,7 @@ try {
   const multipart = async (bytes, filename, type) => {
     const form = new FormData();
     form.append('avatar', new Blob([bytes], { type }), filename);
-    return fetch('http://127.0.0.1:8090/api/users/me/avatar', {
+    return stackFetch('/api/users/me/avatar', {
       method: 'PATCH', headers: { Authorization: headers.Authorization }, body: form,
       signal: AbortSignal.timeout(15000),
     });
@@ -86,7 +98,7 @@ try {
   assert.equal(avatar.status, 200, JSON.stringify(avatarBody));
   const avatarUrl = avatarBody.user.avatarUrl;
   assert.match(avatarUrl, /^\/uploads\/avatars\/user-.*\.webp$/);
-  const download = await fetch('http://127.0.0.1:8090' + avatarUrl);
+  const download = await stackFetch(avatarUrl);
   assert.equal(download.headers.get('content-type'), 'image/webp');
   const avatarBytes = Buffer.from(await download.arrayBuffer());
   assert.ok(avatarBytes.length > 0);
@@ -112,7 +124,7 @@ try {
   assert.equal(evidence.load.write.errors, 0);
   assert.ok(evidence.load.read.p95Ms < 500, JSON.stringify(evidence.load));
   assert.ok(evidence.load.write.p95Ms < 1000, JSON.stringify(evidence.load));
-  const metrics = await fetch('http://127.0.0.1:8090/metrics', { headers: { Authorization: 'Bearer local_validation_metrics_not_for_production' } });
+  const metrics = await stackFetch('/metrics', { headers: { Authorization: 'Bearer local_validation_metrics_not_for_production' } });
   const measurements = await metrics.text();
   assert.ok(metrics.ok && measurements.includes('schedra_http_requests_total'));
   assert.ok(measurements.includes('category="cache",outcome="hit"'));
@@ -170,6 +182,7 @@ try {
   compose(['start', 'events']);
   compose(['up', '-d', '--no-deps', '--wait', '--wait-timeout', '90', 'events']);
   compose(['exec', '-T', 'nginx', 'nginx', '-s', 'reload']);
+  console.log('Checking independent consumer restart and durable receipts');
   await waitFor(async () => {
     try { return (await http('/ops/events/ready')).response.status === 200; } catch { return false; }
   });
@@ -216,7 +229,7 @@ try {
     }
     assert.ok(healthy, 'Release readiness must match ' + release);
     assert.equal((await http(`/api/clients/${id}`, { headers })).response.status, 200);
-    const persisted = await fetch('http://127.0.0.1:8090' + avatarUrl);
+    const persisted = await stackFetch(avatarUrl);
     assert.equal(persisted.status, 200);
     assert.deepEqual(Buffer.from(await persisted.arrayBuffer()), avatarBytes);
   }
