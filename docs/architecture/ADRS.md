@@ -14,6 +14,11 @@ Data: 26/10/2026. Estado: adotadas no codigo da branch; revisao e release ainda 
 
 **Evidencias:** `src/modules/clients`, `src/modules/appointments`, `src/platform/tenancy`; services recebem interfaces de repository e possuem testes.
 
+**Revisao em 09/11:** a decisao continua valida para a API principal. A arquitetura
+do produto passa a incluir um microsservico de atividade (ADR-007), por exigencia
+docente adicional comunicada nesta data. Nao se apresenta a decisao anterior como
+se esse servico ja existisse em outubro.
+
 ## ADR-002 - Dados centrais, dados locais e cache separados
 
 **Contexto:** usuarios compartilham dados por organizacao, mas precisam recuperar dados/fotos apos reiniciar o celular. Um banco local nao pode autorizar acesso de outro usuario.
@@ -67,3 +72,38 @@ Referencia: [semantica oficial Redis Pub/Sub](https://redis.io/docs/latest/devel
 **Alternativas:** medir somente o service omite HTTP/proxy/auth; apontar carga para Vercel alteraria um ambiente real. Implantar Grafana/Alertmanager agora aumentaria o escopo sem fechar a coleta basica.
 
 **Consequencias:** evidencia reproduzivel de pequena carga, nao capacidade de producao ou disponibilidade de 30 dias. Alertas sao avaliados no coletor, sem canal de notificacao externo. Credenciais sinteticas ficam apenas no perfil isolado; Prometheus tem bind loopback. Rollback de uma configuracao na mesma revisao de fonte nao comprova compatibilidade entre quaisquer releases/schema.
+
+## ADR-007 - Extrair atividade por eventos como microsservico
+
+**Contexto (09/11/2026):** Luiz comunicou orientacao oral do professor: pelo menos
+um microsservico. O PDF analisado nao explicitava esse criterio. Redis sozinho
+e containers separados da mesma API nao atendem essa exigencia. O consumidor
+existente estava dentro do processo da API e apenas registrava logs.
+
+**Decisao:** extrair para Microservico-Eventos, com pacote/lock/build/testes,
+Dockerfile e ciclo de vida proprios. Ele valida client events v1 e mantem projecao
+operacional persistente de contagens em SQLite privado, com dedupe por eventId.
+API publica apos commit e nao inicia consumidor. O contrato e JSON versionado,
+nao um import TypeScript compartilhado ou acesso ao banco SQL da API.
+
+**Alternativas:** extrair agenda/autenticacao elevaria o risco transacional e
+escopo; outro processo que apenas importasse o backend e seus models nao teria
+autonomia de dados. Um servico de notificacao precisaria canal externo,
+preferencias/consentimento e entrega duravel que ainda nao existem.
+
+**Consequencias:** e possivel reiniciar/implantar cada processo independentemente.
+Queda do consumidor nao impede CRUD, mas Pub/Sub pode perder eventos. SQLite
+preserva apenas o que foi recebido/confirmado; nao substitui outbox/replay.
+Retencao de recibos limita dedupe a 30 dias por padrao, sem apagar os agregados.
+Uma replica com volume proprio e adequada ao perfil de demonstracao; HA exige
+outra decisao. node:sqlite na linha Node 24 usada ainda emite aviso experimental.
+
+**Seguranca/operacao:** endpoints de atividade e metricas exigem token operacional
+dedicado, sem aceitar JWT de usuario. Payloads extras sao rejeitados e nao
+armazenados. Logs correlacionam metadados, nao nomes/CPF/email. Redis fica em
+rede interna; producao exige autenticacao/TLS/ACL de canal e segredo exclusivo.
+
+**Evidencia exigida:** API publica e outro container consome o mesmo eventId;
+parar o consumidor nao interrompe CRUD; reinicio preserva projecao/dedupe e
+volta a consumir mensagens novas. Testes unitarios, Redis real e smoke de stack.
+Implementacao em PR #45; aceite final/homologacao e deploy produtivo separados.

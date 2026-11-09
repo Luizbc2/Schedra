@@ -1,6 +1,6 @@
 # Gestão da nova entrega no Jira
 
-Atualizado em 06/11/2026. Site criado e conexão autorizada pelo proprietário. Esta página registra configuração e planejamento; não atesta implementação das funcionalidades.
+Atualizado em 09/11/2026. Site criado e conexão autorizada pelo proprietário. Esta página registra configuração e planejamento; não atesta aceite das funcionalidades.
 
 ## Acesso
 
@@ -23,12 +23,13 @@ Nao foram criadas sprints antigas nem registradas reunioes que nao ocorreram.
 
 | Sprint | Periodo planejado (Sao Paulo) | Objetivo / tickets |
 | --- | --- | --- |
-| Sprint 1 - Arquitetura e API (id 1) | 09/11, 09h a 15/11, 18h | Revisar arquitetura/diagramas/Cynefin, completar contratos/upload e integrar base em dev. SCHED-1, 3, 34, 45, 46, 47, 55, 57 |
+| Sprint 1 - Arquitetura e API (id 1) | Inicio real 09/11, 09h13; fim planejado 15/11, 18h | Revisar arquitetura/diagramas/Cynefin, completar contratos/upload, entregar microsservico e integrar base em dev. SCHED-1, 3, 34, 45, 46, 47, 55, 57, 58 |
 | Sprint 2 - Validacao e entrega (id 3) | 16/11, 09h a 22/11, 18h | Homologar Redis/eventos/proxy/metricas, avatar em aparelho, implantacao/retorno e versao/evidencias. SCHED-2, 44, 48, 49, 50, 51, 52, 53, 54, 56 |
 
-As duas estao **futuras**, com 8 e 10 itens, respectivamente. Iniciar apenas no
-comeco real do ciclo; por enquanto aparecem no Backlog, nao em um quadro ativo.
-E planejamento proposto a revisar conforme capacidade/prazo confirmado, sem
+Sprint 1 foi **iniciada em 09/11**, ao comecar o trabalho adicional de SCHED-58,
+e tem 9 itens. Sprint 2 permanece **futura**, com 10 itens. O inicio registrado
+nao foi retroagido para o horario planejado. A apresentacao continua provisoria.
+E planejamento a revisar conforme capacidade/prazo confirmado, sem
 pontos ou horas inventados. Limite operacional proposto: dois itens em execucao
 simultanea, sem mudar retroativamente os estados reais ja existentes.
 
@@ -38,7 +39,7 @@ andamento, **0/2 concluidos**. Ambos foram transportados, sem declarar entrega
 ou cerimonia ocorrida. O registro de fechamento esta em SCHED-2/SCHED-54.
 
 [SCHED-57](https://schedra-luiz.atlassian.net/browse/SCHED-57) foi criada para
-revisar/integrar #41/#42/#43/#44 em dev e identificar o SHA aprovado para
+revisar/integrar #41/#42/#43/#44/#45 em dev e identificar o SHA aprovado para
 homologacao. Ela bloqueia as verificacoes integradas da segunda sprint.
 SCHED-47/48/52 bloqueiam a entrega continua em SCHED-49; revisao de arquitetura,
 DDD, deploy e avatar bloqueiam a liberacao final em SCHED-44.
@@ -139,6 +140,7 @@ O backlog contém histórias, aceites, prioridades, responsável, versão e depe
 | BE-03 | [SCHED-52](https://schedra-luiz.atlassian.net/browse/SCHED-52) | R06 | Compose com Redis e Nginx reverso validado |
 | BE-04 | [SCHED-53](https://schedra-luiz.atlassian.net/browse/SCHED-53) | R06 | DTOs, erros e observabilidade estruturada |
 | TF-03 | [SCHED-54](https://schedra-luiz.atlassian.net/browse/SCHED-54) | R01 | Planejar e registrar ciclos reais de entrega |
+| M1 adicional | [SCHED-58](https://schedra-luiz.atlassian.net/browse/SCHED-58) | R06 | Consumidor de eventos independente, conforme orientacao oral do professor |
 | BUG-01 | [SCHED-55](https://schedra-luiz.atlassian.net/browse/SCHED-55) | R07 | Corrigir diagramas com sobreposição, conteúdo pobre e fluxos incorretos |
 | BUG-02 | [SCHED-56](https://schedra-luiz.atlassian.net/browse/SCHED-56) | R04 | Revalidar falha de avatar no Expo e garantir persistência |
 | Configuração | [SCHED-4](https://schedra-luiz.atlassian.net/browse/SCHED-4) | R01 | Site, conexão autorizada e plano Free |
@@ -156,7 +158,11 @@ O backlog contém histórias, aceites, prioridades, responsável, versão e depe
 
 ## Datas e transparência
 
-O onboarding criou automaticamente uma sprint ativa, **SCRUM Sprint 0**, com janela de 22/10 a 05/11/2026. Ela contém as tarefas de preparação da matriz e gestão. Essa janela é provisória, não é uma data de entrega informada pelo professor. A sprint futura **SCRUM Sprint 1** permanece sem datas até planejamento de capacidade. A tentativa de personalizar o nome pela interface não persistiu após recarregar; o nome padrão não interfere nos tickets e versões.
+Historico do onboarding: a **SCRUM Sprint 0** foi criada automaticamente com
+janela de 22/10 a 05/11/2026. A Sprint 1 inicialmente nao tinha datas; uma
+tentativa de renomear pela interface nao persistiu. Isso foi superado pelo
+planejamento de 06/11 e inicio real em 09/11 descritos acima. Datas de sprint
+nao equivalem a prazo de entrega informado pelo professor.
 
 As tarefas de exemplo SCHED-1, SCHED-2 e SCHED-3 foram reaproveitadas para o planejamento; SCHED-4 foi reaproveitada para a configuração efetivamente realizada. As datas de vencimento de exemplo foram removidas. Histórico anterior à adaptação é do onboarding automático, não evidência de trabalho executado.
 

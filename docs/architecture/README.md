@@ -1,6 +1,11 @@
 # Arquitetura atual do Schedra
 
-Revisao de 06/11/2026. Diagramas abaixo descrevem o codigo desta branch, nao uma promessa de microsservicos. Os modelos antigos de evolucao continuam sendo propostas. Referencias: [C4](https://c4model.com/diagrams), [dominio e contextos](DDD.md), [decisoes](ADRS.md), [qualidade](QUALITY.md), [operacao Redis](../REDIS_OPERACAO.md).
+Revisao de 09/11/2026. A API principal permanece modular e ha um microsservico
+independente de atividade por eventos, extraido por orientacao docente adicional.
+Os modelos antigos de evolucao continuam sendo propostas. Referencias:
+[C4](https://c4model.com/diagrams), [dominio](DDD.md), [ADRs](ADRS.md),
+[qualidade](QUALITY.md), [Redis](../REDIS_OPERACAO.md),
+[microsservico](../../Microservico-Eventos/README.md).
 
 ## C4 - Contexto
 
@@ -33,6 +38,8 @@ C4Container
     ContainerDb(db, "Banco central", "PostgreSQL ou MySQL / Sequelize", "Fonte de verdade compartilhada e controle de acesso")
     ContainerDb(redis, "Cache e eventos", "Redis", "Cache temporario de clientes e Pub/Sub sem durabilidade")
     Container(metrics, "Coletor de validacao", "Prometheus", "Consulta metricas autenticadas, avalia regras e guarda series por um dia")
+    Container(events, "Atividade por eventos", "Node 24 / TypeScript", "Microsservico: valida eventos e mantem projecao operacional; deploy independente")
+    ContainerDb(eventdb, "Dados de atividade", "SQLite / volume exclusivo", "Recibos idempotentes com retencao e totais persistentes; nao e banco da API")
   }
   Rel(user, mobile, "Usa")
   Rel(user, web, "Usa", "Navegador")
@@ -42,8 +49,11 @@ C4Container
   Rel(proxy, api, "Encaminha /api e /uploads", "HTTP interno")
   Rel(proxy, web, "Busca assets", "HTTP interno")
   Rel(api, db, "Le e grava dados autorizados", "SQL via driver")
-  Rel(api, redis, "Cache e publicacao/assinatura", "TCP / RESP")
+  Rel(api, redis, "Cache e publicacao de eventos v1", "TCP / RESP")
+  Rel(events, redis, "Assina eventos de clientes v1", "TCP / RESP")
+  Rel(events, eventdb, "Grava recibo e projecao atomicamente", "SQL local")
   Rel(metrics, api, "Consulta /metrics com token operacional", "HTTP interno")
+  Rel(metrics, events, "Consulta /metrics com token proprio", "HTTP interno")
 ```
 
 No Expo Web, IndexedDB substitui SQLite nativo. Tokens nativos ficam no SecureStore, fora do SQLite. O banco central suporta dois dialetos; a stack de validacao usa PostgreSQL 16. Nao se infere o banco de producao a partir desse perfil. Redis nao armazena permissoes nem decide disponibilidade de horarios.
@@ -67,10 +77,15 @@ O decorator envolve o adaptador SQL na composicao do controller. Leituras indivi
 
 ## Qualidades e limites da estrutura
 
-- Monolito modular com API unica, deploy unico e transacoes locais; nao e um sistema de microsservicos.
+- API principal modular, mais um microsservico independente de atividade.
+  Agenda e autenticacao nao foram reescritas como microsservicos. Cada processo
+  possui build/deploy proprio e dados sob sua responsabilidade; eventos sao o
+  contrato entre eles, sem imports de codigo interno ou SQL compartilhado.
 - Modulos de negocio em `Backend-Schedra/src/modules`; tenancy, auditoria e Redis em `src/platform`; HTTP e utilitarios em `src/shared`.
 - Contratos Repository permitem testar services sem banco. Ainda existem acoplamentos diretos de algumas regras ao Sequelize; nao se declara arquitetura hexagonal pura.
 - `Aplicativo-Schedra/src/features` agrupa telas, APIs e regras por funcionalidade; `src/shared` contem UI, banco, rede e midia.
 - SQLite permite consultas ja salvas e fila de fotos. CRUD de negocio offline, conflitos e idempotencia geral ainda nao foram entregues.
-- Pub/Sub exige processo duradouro para consumo continuo. Funcoes serverless nao garantem assinante ativo; esta entrega o demonstra no processo Node/containers.
+- Pub/Sub exige consumidor duradouro. Agora roda em Microservico-Eventos, nao no
+  startup da API. A persistencia de recibos nao recupera eventos perdidos durante
+  queda. Funcoes serverless nao garantem assinante continuo; usar processo/container.
 - Nginx HTTP e credenciais sinteticas de `compose.validation.yml` sao exclusivamente locais/CI. Producao requer TLS, segredos e infraestrutura proprios.

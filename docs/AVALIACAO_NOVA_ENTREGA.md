@@ -1,15 +1,25 @@
 # Estimativa de atendimento da nova rubrica
 
-Atualizacao: 06/11/2026. Fonte: recorte da rubrica em NOVA_ENTREGA_ARQUITETURA.md. Soma dos pesos: **9 pontos**. Esta e uma autoavaliacao conservadora de evidencias, nao nota atribuida pelo professor nem garantia de fracionamento dos criterios.
+Atualizacao: 09/11/2026. Fonte: rubrica em NOVA_ENTREGA_ARQUITETURA.md,
+conferida contra o PDF fornecido. Soma dos pesos: **9 pontos**, em 12 criterios.
+Esta e uma autoavaliacao conservadora de evidencias, nao nota atribuida pelo
+professor nem garantia de fracionamento dos criterios.
 
 ## Resultado estimado
 
-**7,2 / 9 = aproximadamente 80% de cobertura ponderada.** Evolucao desde 5,7/9
+**Estimativa registrada em 06/11: 7,2 / 9, aproximadamente 80%.** Evolucao desde 5,7/9
 no ciclo anterior, sustentada por VOs usados no service, coalescencia testada,
 coletor real, carga pequena, upload pelo proxy e rollback de configuracao no CI.
 Nao equivale a 80% dos arquivos, das features nem a nota garantida. A entrega
 continua em PRs para revisao, sem integrar producao. Se a correcao exigir aceite
 integral por linha, em vez de fracionamento, o percentual atribuido pode diferir.
+
+Em 09/11 foi acrescentada a orientacao oral do professor: **M1, ao menos um
+microsservico**. Ela nao recebeu peso arbitrario e nao aumenta automaticamente
+o percentual anterior. SCHED-58/PR #45 extraem o consumidor de eventos para
+processo/container/SQLite proprios. O resultado tecnico e seu CI devem ser
+verificados separadamente, antes do aceite humano. ADR-007 registra a decisao.
+Os numeros da tabela abaixo sao o retrato de 06/11, nao nova nota calculada.
 
 | Criterio | Peso | Cobertura estimada | Evidencia e o que limita o credito |
 | --- | ---: | ---: | --- |
@@ -51,14 +61,19 @@ integral por linha, em vez de fracionamento, o percentual atribuido pode diferir
 - [CI 8efead7](https://github.com/Luizbc2/Schedra/actions/runs/40346312755): os quatro jobs passaram novamente, agora com **106 testes backend, nenhum ignorado**, incluindo concorrencia do circuito e cache corrompido. O smoke real repetiu os resultados de proxy, eventos, cache e recuperacao. Conferir o check do HEAD no PR antes do aceite, pois atualizacoes posteriores geram novas execucoes.
 - Docker local passou no parse do Compose, mas o daemon falhou no gerenciador de inferencia. A evidencia de runtime veio do runner Linux do GitHub, nao de uma execucao local inventada.
 
-## O que ainda impede 100%
+## Fechamento e limites do escopo
 
-CD produtivo controlado, aparelhos fisicos, carga prolongada e SLOs observados
-no ambiente real, canal externo de alertas, revisao final das pranchas, aceite
-no Jira e release integrada. O rollback de configuracao, a pequena carga e o
-coletor isolado ja foram exercitados; nao confundir com aceite de producao.
-Os riscos de dependencias em AUDITORIA_DEPENDENCIAS.md continuam abertos.
-CRUD offline de negocio/idempotencia/conflitos permanece pendente no produto,
-sem ser confundido com cache Redis ou Pub/Sub nem requisito literal desta rubrica.
+Para fechar a entrega: revisar os criterios/diagramas, validar o requisito M1,
+conferir contratos e ensaios, integrar/homologar os PRs autorizados e registrar
+revisao/aceite reais no Jira. A existencia de documentos e CI nao conclui essa
+gestao. Nao houve merge ou deploy produtivo nesta rodada.
+
+CD produtivo, aparelhos fisicos, carga prolongada, SLO observado por 30 dias e
+canal externo de alertas sao importantes para liberacao real; o texto do PDF
+nao exige todos esses exercicios como entregaveis literais. Ele pede pipeline
+esqueleto, estrategia/runbook e plano de observabilidade com SLOs/SLIs. Nao
+transformar hardening adicional em condicao artificial da nota. Os ensaios
+isolados tambem nao certificam producao. Riscos de dependencias continuam em
+AUDITORIA_DEPENDENCIAS.md. CRUD offline completo segue como evolucao separada.
 
 Nao transformar a existencia destes documentos em aceite automatico. Se o professor atribuir credito apenas a criterios integralmente aceitos, a nota pode diferir desta estimativa.

@@ -1,12 +1,14 @@
 # Validacao operacional da rubrica
 
-Incremento de 06/11/2026, PR [#44](https://github.com/Luizbc2/Schedra/pull/44).
+Incremento de 06/11, ampliado em 09/11/2026 no
+[PR #45](https://github.com/Luizbc2/Schedra/pull/45), dependente de #44.
 Este roteiro executa dados sinteticos em containers locais/runner, nao em Vercel,
 nem no banco de um usuario. O checkout original e suas alteracoes foram preservados.
 
 ## Executar e demonstrar
 
-Requisitos: Docker Engine/Compose v2 e Node 22 ou posterior. Na raiz:
+Requisitos: Docker Engine/Compose v2; Node 24.12 ou posterior na linha 24 para
+testar tambem o microsservico (node:sqlite experimental). Na raiz:
 
 ```powershell
 node --test scripts/load-probe.test.mjs
@@ -34,10 +36,17 @@ O demonstrador completo pode sobrescrever o avatar da propria conta de teste.
 | Upload | PNG real -> WebP servido pela API; falso PNG = 415; acima de 5 MiB = 413 do Multer; acima de 6 MiB = 413 do Nginx |
 | Cache | Miss/hit nos contadores; update seguido de listagem retorna nome novo; testes Redis reais cobrem TTL e uma rajada de 20 leituras para um SELECT |
 | Carga pequena | 80 GETs com 5 concorrentes; 20 PUTs com 2 concorrentes; zero respostas nao-2xx; p95 <500 ms / <1000 ms, respectivamente |
-| Eventos | Publicacao e consumo no backend com o mesmo eventId, sem conteudo pessoal |
+| Eventos | Publicacao no backend e consumo em events com eventId/requestId iguais; apenas um assinante, nenhum consumidor no startup da API |
+| Microsservico M1 | API/metrics com token dedicado e JWT de usuario recusado; projecao, dedupe e conflito; SQLite persiste apos reinicio; API continua gravando com consumidor parado; mensagem perdida nao e apresentada como replay |
 | Coletor | promtool valida config/regras; consulta a API Prometheus exige target up=1, serie de clientes e recording rule avaliada |
 | Falhas | Redis parado: readiness e escrita/listagem continuam; reinicio PostgreSQL preserva cliente |
 | Rollback de configuracao | Substituir imagem baseline por candidata e restaurar baseline; /health identifica cada versao; cliente e bytes da foto permanecem iguais |
+
+O pipeline agora tem seis jobs: backend, web, mobile, events, containers e
+tooling. O job events executa testes com Redis real e contrato proprio. O
+rollback da API tambem verifica que o container do consumidor nao foi trocado.
+As sondas do ensaio usam conexoes novas durante reload do proxy, sem retry de
+comandos de escrita. Falhas continuam bloqueando o gate.
 
 O relatorio `artifacts/stack-evidence.json` guarda horario UTC, carga, p95,
 checks e `passed`. O workflow publica o artefato `rubric-stack-evidence`, inclusive

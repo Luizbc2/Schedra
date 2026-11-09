@@ -27,3 +27,12 @@ O npm propoe downgrade para Expo 44 e Sequelize 3 com `--force`. Esses downgrade
 Os riscos residuais pertencem a [SCHED-53](https://schedra-luiz.atlassian.net/browse/SCHED-53) e a revisao de seguranca da entrega. Antes de liberar: revisar alcance e impacto de cada advisory, verificar correcoes oficiais, testar toolchain/assinatura e runtime apos a atualizacao, registrar decisao e responsavel. Nenhum aceite formal de risco foi inventado. PR em rascunho; sem merge ou deploy de producao.
 
 Enquanto houver alertas, nao declarar seguranca completa ou 100% da rubrica. Manter ferramentas locais restritas, nao processar projetos ou dados de assinatura nao confiaveis e nao expor servidores de desenvolvimento publicamente.
+
+## Microsservico de eventos - 09/11/2026
+
+Pacote independente com lock proprio. `npm audit --omit=dev --audit-level=high`
+retornou **zero vulnerabilidades** no runtime instalado. A instalacao incluindo
+tooling reportou **sete moderadas** e aviso de suporte do ESLint 9; permanecem
+como risco de desenvolvimento, sem force/downgrade nem aceite inventado.
+O CI mantem auditoria de dependencias de producao do novo servico. Isso nao
+remove os riscos registrados nos outros pacotes nem afirma ausencia de risco.

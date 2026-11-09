@@ -38,6 +38,20 @@ Com conta sintetica autenticada, duas chamadas GET /api/clients devem produzir m
 
 Logs `event_published` e `event_consumed` devem ter o mesmo eventId/requestId. Numero de assinantes zero indica publicacao sem consumidor presente; nao e confirmacao de entrega. Nenhum evento deve conter CPF, nome, email ou notas.
 
+Desde 09/11, event_published fica nos logs do backend e event_consumed nos de
+Microservico-Eventos. A API nao inicia assinante. O servico possui projecao
+SQLite e health/readiness/metricas proprios. Ver seu README para o contrato,
+retencao, token exclusivo e a limitacao de perda sem replay.
+
+```powershell
+docker compose -p schedra-rubric-qa -f compose.validation.yml logs backend events
+```
+
+Na stack, /ops/events/activity e /ops/events/metrics exigem o token dedicado de
+eventos, nao JWT nem METRICS_TOKEN da API. Parar somente events nao deve afetar
+o CRUD. Depois do restart, conferir projecao preservada e consumo de eventos novos;
+nao apresentar os eventos perdidos no intervalo como recuperados.
+
 ## Runbook curto
 
 1. Conferir `/health` (processo) e `/ready` (SQL). Proteger `/metrics` com o token do ambiente, sem coloca-lo em URL, logs ou screenshots.

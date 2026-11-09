@@ -97,3 +97,24 @@ issues/versoes depende desse aceite, nao do fim da data planejada.
 Detalhes/IDs e regras operacionais em [GESTAO_JIRA.md](GESTAO_JIRA.md).
 
 Referencias: [Cynefin](https://thecynefin.co/about-us/about-cynefin-framework/), [Jira Schedra](https://schedra-luiz.atlassian.net/jira/software/projects/SCHED/boards/1), [PR #42](https://github.com/Luizbc2/Schedra/pull/42), [PR #43](https://github.com/Luizbc2/Schedra/pull/43).
+
+## Execucao real em 09/11 - microsservico adicional
+
+Luiz comunicou que o professor exige pelo menos um microsservico e autorizou
+implementar. SCHED-58 foi criada com aceite e responsabilidade reais, em R06,
+e movida para Em andamento. Sprint 1 foi iniciada as 12h13 UTC (09h13 de Sao
+Paulo), sem retroagir inicio nem concluir Sprint 2. O prazo por volta de 23/11
+permanece nao confirmado. Nao foram inventados ritos ou aprovacoes.
+
+Decisao: extrair o consumidor de eventos ja existente, com contrato JSON v1 e
+SQLite proprio, preservando a API modular. Risco complicado: conexao Redis,
+dedupe transacional, reinicio e limites de Pub/Sub. Tratamento: testes unitarios,
+Redis real e ensaio de parada/retorno, sem distribuir autenticacao ou agenda.
+O [PR #45](https://github.com/Luizbc2/Schedra/pull/45) depende de #44; nenhuma
+integracao ou alteracao de producao foi executada.
+
+Primeiro CI aprovou cinco jobs, incluindo 126 testes backend e oito do novo
+servico sem ignorados. Containers chegou a publicar/consumir entre processos,
+mas falhou apos reload do Nginx por socket reutilizado encerrado. A correcao
+isolou conexoes das sondas e melhorou contexto de erro, sem retry de escrita,
+sem retirar validacoes e sem converter falha parcial em sucesso.

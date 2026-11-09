@@ -27,6 +27,26 @@ Primeiro estabilizar componentes e armazenamento local do [plano de reestrutura�
 
 Os pesos da imagem somam 3 por disciplina. Não foram inferidos outros critérios fora do recorte. Atendimento depende de evidência, não apenas de arquivo criado.
 
+### Requisito adicional do professor (09/11/2026)
+
+Luiz informou que o professor exige **pelo menos um microsservico**. Esta
+orientacao complementa os 12 criterios do PDF `Rubrica.pdf`, conferido em 09/11;
+nao foi inventado um peso para ela. Identificador adicional: **M1**, historia
+[SCHED-58](https://schedra-luiz.atlassian.net/browse/SCHED-58),
+[PR #45](https://github.com/Luizbc2/Schedra/pull/45), ainda sem merge/aceite.
+
+Entrega: `Microservico-Eventos`, consumidor independente dos eventos de clientes,
+com build, processo, container, SQLite e contrato operacional proprios. A API
+continua modular, publica via Redis e nao inicia o consumidor. O ensaio precisa
+comprovar publicacao/consumo correlacionados, autenticacao operacional, dedupe,
+persistencia e CRUD funcionando enquanto o consumidor esta parado. C4, Context
+Map e ADR-007 descrevem a fronteira; Pub/Sub nao oferece replay ou entrega duravel.
+
+CRUD offline completo, publicacao nas lojas, CD produtivo contratado e esperar
+30 dias de metricas sao evolucoes/validacoes adicionais, nao novas obrigacoes
+literais inferidas do PDF. O requisito de microservico, em contraste, foi
+explicitamente comunicado pelo responsavel e entrou no escopo atual.
+
 ## Decisões e contratos antes de implementar
 
 ### Componentes e persistência

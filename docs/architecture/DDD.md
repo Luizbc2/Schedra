@@ -12,6 +12,7 @@ Modelo revisado em 06/11/2026. DDD aqui organiza linguagem e consistencia; nao s
 | Identidade e acesso | Generico/suporte | Credenciais, sessoes, papeis e permissoes | `modules/auth`, `platform/tenancy` |
 | Conta e administracao | Suporte | Perfil/avatar e gestao autorizada de usuarios | `modules/users`, `modules/admin` |
 | Auditoria | Suporte | Historico de acoes e correlacao, sem substituir o estado de negocio | `platform/audit` |
+| Atividade operacional | Suporte | Projecao de eventos recebidos e recibos idempotentes, sem alterar agenda/cadastros | `Microservico-Eventos`, processo e SQLite proprios |
 
 Redis, SQL, HTTP, UI e SQLite sao tecnologia/adaptadores, nao novos dominios de negocio. Pagamentos, lembretes e notificacoes existentes no schema/propostas nao constituem contextos funcionais completos nesta entrega.
 
@@ -25,6 +26,7 @@ flowchart TB
   Personal["Agenda pessoal\nDownstream: propriedade exclusiva do usuario"]
   Account["Conta e administracao\nDownstream: perfil e gestao autorizada"]
   Audit["Auditoria\nDownstream: registro de acoes"]
+  Activity["Atividade operacional\nDownstream: projecao independente"]
   Identity -->|"Contexto autenticado / conformist"| Catalog
   Identity -->|"Contexto autenticado / conformist"| Scheduling
   Identity -->|"userId / conformist"| Personal
@@ -33,9 +35,14 @@ flowchart TB
   Scheduling -->|"Acao confirmada"| Audit
   Catalog -->|"Acao confirmada"| Audit
   Account -->|"Acao confirmada"| Audit
+  Catalog -->|"Published Language: evento JSON v1 / Redis"| Activity
 ```
 
-As setas indicam fornecedor para consumidor, nao fluxo de login nem relacoes de banco. Integracao e por chamadas internas e contratos tipados, nao RPC. Identidade fornece o contexto compartilhado via AsyncLocalStorage; isso e acoplamento de plataforma explicitamente assumido, nao um contrato remoto versionado.
+As setas indicam fornecedor para consumidor, nao fluxo de login nem relacoes de
+banco. Na API, integracao e interna por contratos tipados. A excecao introduzida
+em 09/11 e Atividade: contrato JSON v1 assincrono via Redis, sem banco ou codigo
+interno compartilhado. Identidade fornece contexto por AsyncLocalStorage apenas
+dentro da API; o servico operacional nao herda esse contexto nem autoriza usuarios.
 
 ## Linguagem e agregado empresarial
 
