@@ -4,6 +4,8 @@ import { RedisTransport, ResilientRedis } from "../../platform/redis/resilient-r
 import { CachedClientRepository } from "../../modules/clients/repositories/cached-client.repository";
 import { ClientRepository } from "../../modules/clients/repositories/client.repository";
 import { runWithRequestContext } from "../../shared/http/request-context";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 class FakeRedis implements RedisTransport {
   rows = new Map<string, { value: string; expires?: number }>();
@@ -180,23 +182,25 @@ describe("Redis cache-aside", () => {
 
 describe("Efeitos de clientes e eventos", () => {
   const client = { id: 1, name: "Teste", email: "", phone: "", cpf: "", notes: "" };
-  it("publica e consome envelope correlacionado sem dados pessoais", async () => {
+  it("publica envelope v1 sem consumidor embutido nem dados pessoais", async () => {
     const { redis, transport, log } = setup();
-    const events = new DomainEvents(redis, transport, "test:events", log);
-    await events.start();
+    const events = new DomainEvents(redis, "test:events", log);
     await runWithRequestContext({ requestId: "request-123" }, () => events.publish("client.created", "org:1", 1));
     const records = log.mock.calls.map(call => call[0]);
     const published = records.find(record => record.type === "event_published");
-    const consumed = records.find(record => record.type === "event_consumed");
-    expect(published.eventId).toBe(consumed.eventId);
-    expect(consumed.requestId).toBe("request-123");
-    expect(transport.calls.find(args => args[0] === "PUBLISH")![2]).not.toMatch(/email|cpf|name|phone/);
-    events.consume('{"version":99}');
-    expect(log.mock.calls).toHaveLength(2);
+    const message = transport.calls.find(args => args[0] === "PUBLISH")![2];
+    const envelope: unknown = JSON.parse(message);
+    const schema = JSON.parse(readFileSync(resolve(__dirname, "../../../../contracts/client-event.v1.schema.json"), "utf8")) as { required: string[] };
+    expect(Object.keys(envelope as Record<string, unknown>).sort()).toEqual([...schema.required].sort());
+    expect(envelope).toEqual({ eventId: published.eventId, version: 1, type: "client.created",
+      scope: "org:1", entityId: 1, occurredAt: expect.any(String), requestId: "request-123" });
+    expect(message).not.toMatch(/email|cpf|name|phone/);
+    expect(log.mock.calls).toHaveLength(1);
+    expect(transport.listener).toBeUndefined();
   });
   it("efeitos so apos escrita confirmada; nenhuma invalidacao em update inexistente", async () => {
     const { cache, redis, transport } = setup();
-    const events = new DomainEvents(redis, transport, "test:events");
+    const events = new DomainEvents(redis, "test:events");
     const source: ClientRepository = { findById: jest.fn(), list: jest.fn(), create: jest.fn(async () => client), update: jest.fn(async () => null), delete: jest.fn(async () => false) };
     const invalidated = jest.spyOn(cache, "invalidate");
     const published = jest.spyOn(events, "publish");

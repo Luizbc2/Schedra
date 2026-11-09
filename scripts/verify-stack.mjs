@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { loadProbe } from './load-probe.mjs';
+import { randomUUID } from 'node:crypto';
 const project = 'schedra-rubric-qa';
 const compose = (args, image) => {
   const result = spawnSync('docker', ['compose', '-p', project, '-f', 'compose.validation.yml', ...args], {
@@ -13,6 +14,33 @@ const compose = (args, image) => {
 const http = async (path, init) => {
   const response = await fetch(`http://127.0.0.1:8090${path}`, { ...init, signal: AbortSignal.timeout(15000) });
   return { response, body: await response.json() };
+};
+const capture = args => {
+  const result = spawnSync('docker', ['compose', '-p', project, '-f', 'compose.validation.yml', ...args],
+    { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, 'Compose capture failed: ' + args[0]);
+  return result.stdout.trim();
+};
+const jsonLogs = service => capture(['logs', '--no-color', '--no-log-prefix', service])
+  .split('\n').flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } });
+const waitFor = async condition => {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    if (await condition()) return;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw new Error('Microservice acceptance timed out');
+};
+const eventsHeaders = { Authorization: 'Bearer local_events_metrics_token_not_for_production' };
+const activity = async () => {
+  const result = await http('/ops/events/activity', { headers: eventsHeaders });
+  assert.equal(result.response.status, 200);
+  return result.body.items;
+};
+const countActivity = async type => (await activity()).find(item => item.type === type)?.count || 0;
+const eventsMetrics = async () => {
+  const response = await fetch('http://127.0.0.1:8090/ops/events/metrics', { headers: eventsHeaders });
+  assert.equal(response.status, 200);
+  return response.text();
 };
 compose(['config', '--quiet']);
 compose(['build', '--build-arg', 'SCHEDRA_RELEASE=qa-baseline', 'backend']);
@@ -26,6 +54,9 @@ try {
   assert.equal((await http('/ready')).response.status, 200);
   assert.equal((await http('/metrics')).response.status, 401);
   assert.equal((await http('/api/clients')).response.status, 401);
+  assert.equal((await http('/ops/events/ready')).response.status, 200);
+  assert.equal((await http('/ops/events/activity')).response.status, 401);
+  assert.equal((await http('/ops/events/metrics')).response.status, 401);
   const web = await fetch('http://127.0.0.1:8090', { signal: AbortSignal.timeout(15000) });
   assert.ok(web.ok && (await web.text()).includes('<div id="root">'));
   const spec = await http('/api/docs/openapi.json');
@@ -36,6 +67,7 @@ try {
   const login = await http('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(credentials) });
   assert.equal(login.response.status, 200);
   const headers = { Authorization: `Bearer ${login.body.token}`, 'Content-Type': 'application/json' };
+  assert.equal((await http('/ops/events/activity', { headers })).response.status, 401);
   const multipart = async (bytes, filename, type) => {
     const form = new FormData();
     form.append('avatar', new Blob([bytes], { type }), filename);
@@ -107,14 +139,53 @@ try {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   assert.ok(evidence.checks.collector, 'Prometheus must actually scrape business metrics');
-  const logs = spawnSync('docker', ['compose', '-p', project, '-f', 'compose.validation.yml', 'logs', '--no-color', '--no-log-prefix', 'backend'], { encoding: 'utf8', windowsHide: true });
-  assert.equal(logs.status, 0);
-  const events = logs.stdout.split('\n').flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } });
+  const events = jsonLogs('backend');
   const publication = events.find(event => event.type === 'event_published');
-  assert.ok(publication && events.some(event => event.type === 'event_consumed' && event.eventId === publication.eventId));
+  assert.ok(publication);
+  assert.equal(publication.subscribers, 1, 'Only the independent microservice should subscribe');
+  assert.ok(!events.some(event => event.type === 'event_consumed'), 'API must not run the consumer');
+  await waitFor(async () => jsonLogs('events').some(event =>
+    event.type === 'event_consumed' && event.eventId === publication.eventId && event.requestId === publication.requestId));
   console.log(JSON.stringify({ eventId: publication.eventId, published: true, consumed: true }));
-  evidence.checks.pubsub = { eventId: publication.eventId, published: true, consumed: true };
+  evidence.checks.pubsub = { eventId: publication.eventId, published: true, consumed: true, consumer: 'events' };
+  await waitFor(async () => (await promQuery('up{job="schedra-events"}'))[0]?.value[1] === '1');
+  const synthetic = { eventId: randomUUID(), version: 1, type: 'client.updated', scope: 'org:999',
+    entityId: 999, occurredAt: new Date().toISOString(), requestId: 'micro-smoke-' + randomUUID() };
+  const publish = value => capture(['exec', '-T', 'redis', 'redis-cli', 'PUBLISH', 'schedra-rubric:v1:events:v1', JSON.stringify(value)]);
+  const beforeDuplicate = await countActivity('client.updated');
+  publish(synthetic);
+  publish(synthetic);
+  publish({ ...synthetic, type: 'client.deleted' });
+  publish({ ...synthetic, email: 'synthetic-field-must-be-rejected' });
+  await waitFor(async () => {
+    const text = await eventsMetrics();
+    return text.includes('outcome="duplicate"} 1') && text.includes('outcome="conflict"} 1') && text.includes('outcome="invalid"} 1');
+  });
+  assert.equal(await countActivity('client.updated'), beforeDuplicate + 1);
+  const retained = await activity();
+  const apiContainer = capture(['ps', '-q', 'backend']);
+  compose(['stop', 'events']);
+  assert.equal((await http(`/api/clients/${id}`, { method: 'PUT', headers,
+    body: JSON.stringify({ ...updatePayload, name: 'Servico de eventos desligado' }) })).response.status, 200);
+  compose(['start', 'events']);
+  compose(['up', '-d', '--no-deps', '--wait', '--wait-timeout', '90', 'events']);
+  compose(['exec', '-T', 'nginx', 'nginx', '-s', 'reload']);
+  await waitFor(async () => {
+    try { return (await http('/ops/events/ready')).response.status === 200; } catch { return false; }
+  });
+  assert.equal(capture(['ps', '-q', 'backend']), apiContainer, 'Restarting the service must not restart the API');
+  assert.deepEqual(await activity(), retained, 'Missed Pub/Sub messages must not be presented as replayed');
+  publish(synthetic);
+  await waitFor(async () => (await eventsMetrics()).includes('outcome="duplicate"} 1'));
+  assert.deepEqual(await activity(), retained, 'Dedupe receipts must survive a process restart');
+  const afterRestart = await countActivity('client.updated');
+  assert.equal((await http(`/api/clients/${id}`, { method: 'PUT', headers, body: JSON.stringify(updatePayload) })).response.status, 200);
+  await waitFor(async () => (await countActivity('client.updated')) === afterRestart + 1);
+  evidence.checks.microservice = { independentConsumer: true, activityProjection: true, dedicatedToken: true,
+    duplicateRejected: true, conflictRejected: true, invalidRejected: true, persistence: true,
+    apiUnaffectedByStop: true, noReplayClaim: true, consumerResumed: true };
   compose(['stop', 'redis']);
+  await waitFor(async () => (await http('/ops/events/ready')).response.status === 503);
   assert.equal((await http('/ready')).response.status, 200);
   const offlineWrite = await http(`/api/clients/${id}`, { method: 'PUT', headers, body: JSON.stringify({ name: 'Atualizado sem Redis', email: 'smoke@schedra.test', phone: '11999999999', cpf: '', notes: 'Banco continua sendo a fonte' }) });
   assert.equal(offlineWrite.response.status, 200, JSON.stringify(offlineWrite.body));
@@ -124,6 +195,8 @@ try {
   compose(['up', '-d', '--wait', '--wait-timeout', '180']);
   assert.equal((await http('/ready')).response.status, 200);
   assert.equal((await http(`/api/clients/${id}`, { headers })).response.status, 200);
+  assert.equal((await http('/ops/events/ready')).response.status, 200);
+  const consumerContainer = capture(['ps', '-q', 'events']);
   // Deploy a configuration-only candidate and restore the prior tagged image.
   // No schema reversal; the same persisted rows and avatar must survive both.
   compose(['build', '--build-arg', 'SCHEDRA_RELEASE=qa-candidate', 'backend'], 'schedra-rubric-backend:candidate');
@@ -148,6 +221,7 @@ try {
     assert.deepEqual(Buffer.from(await persisted.arrayBuffer()), avatarBytes);
   }
   evidence.checks.rollback = { candidate: 'qa-candidate', restored: 'qa-baseline', clientPreserved: true, avatarPreserved: true };
+  assert.equal(capture(['ps', '-q', 'events']), consumerContainer, 'API rollback must not replace the microservice');
   assert.equal((await http(`/api/clients/${id}`, { method: 'DELETE', headers })).response.status, 200);
   evidence.passed = true;
   writeFileSync('artifacts/stack-evidence.json', JSON.stringify(evidence, null, 2) + '\n');

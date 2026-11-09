@@ -18,6 +18,13 @@ groups:
           severity: critical
         annotations:
           summary: "O coletor nao consegue consultar a API do Schedra."
+      - alert: SchedraEventConsumerUnavailable
+        expr: schedra_event_subscriber_ready{job="schedra-events"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consumidor de eventos desconectado; Pub/Sub nao oferece replay."
       - alert: SchedraBusinessErrors
         expr: schedra:business_availability:ratio5m < 0.995
         for: 5m

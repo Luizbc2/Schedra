@@ -58,6 +58,20 @@ services:
       context: ./Frontend-Schedra
       args: { VITE_API_BASE_URL: /api }
     networks: [app]
+  events:
+    build: ./Microservico-Eventos
+    init: true
+    environment:
+      PORT: "3334"
+      REDIS_URL: redis://redis:6379/0
+      EVENTS_CHANNEL: schedra-rubric:v1:events:v1
+      EVENTS_DB_PATH: /data/activity.sqlite
+      EVENTS_METRICS_TOKEN: local_events_metrics_token_not_for_production
+      EVENTS_RETENTION_DAYS: "30"
+    volumes: ["rubric_events:/data"]
+    networks: [app, data]
+    depends_on:
+      redis: { condition: service_healthy }
   nginx:
     image: nginx:1.28-alpine
     ports: ["127.0.0.1:8090:80"]
@@ -66,6 +80,7 @@ services:
     depends_on:
       backend: { condition: service_healthy }
       frontend: { condition: service_started }
+      events: { condition: service_healthy }
     healthcheck:
       test: [CMD, wget, -q, --spider, http://127.0.0.1/health]
       interval: 5s
@@ -84,9 +99,11 @@ services:
     networks: [app]
     depends_on:
       backend: { condition: service_healthy }
+      events: { condition: service_healthy }
 volumes:
   rubric_database:
   rubric_metrics:
+  rubric_events:
 networks:
   app:
   data:

@@ -30,6 +30,11 @@ describe("HTTP safety middleware", () => {
     expect(response.headers["x-request-id"]).toBe("request-test-1");
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
   });
+  it("substitui um requestId fora do contrato antes de publicar eventos ou logs", async () => {
+    const response = await request(buildApp()).get("/resource").set("x-request-id", "private@email.test");
+    expect(response.headers["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(response.headers["x-request-id"]).not.toContain("private");
+  });
 
   it("padroniza erros esperados que saem diretamente dos controladores", async () => {
     const response = await request(buildApp()).get("/invalid");

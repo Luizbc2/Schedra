@@ -35,16 +35,17 @@ integration("Redis real (sem FLUSHDB)", () => {
   });
   it("publicador e assinante separados correlacionam eventId", async () => {
     const records: Record<string, string | number>[] = [];
+    let receivedMessage: unknown;
     let received!: () => void;
     const consumed = new Promise<void>(resolve => { received = resolve; });
-    const events = new DomainEvents(redis, transport, `${prefix}:events`, record => {
-      records.push(record);
-      if (record.type === "event_consumed") received();
-    });
-    await events.start();
+    const events = new DomainEvents(redis, `${prefix}:events`, record => records.push(record));
+    await transport.subscribe(`${prefix}:events`, message => { receivedMessage = JSON.parse(message); received(); });
     await events.publish("client.updated", "org:1", 5);
     await Promise.race([consumed, new Promise((_resolve, reject) => setTimeout(() => reject(new Error("No consumption")), 2000).unref())]);
-    expect(records.find(record => record.type === "event_published")?.eventId).toBe(records.find(record => record.type === "event_consumed")?.eventId);
+    expect(receivedMessage).toMatchObject({
+      eventId: records.find(record => record.type === "event_published")?.eventId,
+      version: 1, type: "client.updated", scope: "org:1", entityId: 5,
+    });
   });
   it("rajada de leituras identicas compartilha um SELECT com Redis real", async () => {
     const load = jest.fn(async () => {

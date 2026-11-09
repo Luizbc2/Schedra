@@ -12,3 +12,10 @@ scrape_configs:
       credentials: local_validation_metrics_not_for_production
     static_configs:
       - targets: ["backend:3333"]
+  - job_name: schedra-events
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials: local_events_metrics_token_not_for_production
+    static_configs:
+      - targets: ["events:3334"]
