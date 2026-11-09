@@ -88,3 +88,19 @@ interromper liberacao antes da troca: este ensaio nao certifica essa compatibili
 O CI fornece verificacao tecnica, nao aceite humano. Validacao em aparelho,
 revisao visual completa das pranchas Excalidraw, riscos upstream de dependencias
 e aceite do professor/responsavel continuam externos ao ensaio.
+
+## Evidencia do microsservico em 09/11
+
+Codigo `5382056`, [CI 42617316711](https://github.com/Luizbc2/Schedra/actions/runs/42617316711):
+seis jobs aprovados; **126 testes backend e oito do microsservico, sem ignorados**.
+O [artefato 13672957982](https://github.com/Luizbc2/Schedra/actions/runs/42617316711/artifacts/13672957982)
+foi baixado e conferido: `passed=true`, consumidor `events`, todos os dez checks
+de `microservice` verdadeiros. EventId `e4398826-1516-42fb-ad36-f1b990753794`
+correlacionado entre publicacao e consumo. Parada/retorno preservou projecao e
+recibos sem reiniciar a API; rollback da API preservou o consumidor.
+
+Na mesma execucao: 80 leituras/5 concorrentes, p95 **50,51 ms**; 20 escritas/2
+concorrentes, p95 **20,50 ms**, zero erros. Ambiente sintetico Linux/Compose,
+nao producao nem medicao prolongada. O primeiro ensaio 42616507680 falhou no
+socket apos reload do Nginx; a correcao manteve todos os gates. Atualizacoes
+posteriores de documentacao geram novo CI: conferir tambem o HEAD do PR #45.

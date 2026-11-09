@@ -39,6 +39,15 @@ Os numeros da tabela abaixo sao o retrato de 06/11, nao nova nota calculada.
 
 ## Evidencias verificadas
 
+- **M1 adicional, PR #45:** codigo `5382056`,
+  [CI 42617316711](https://github.com/Luizbc2/Schedra/actions/runs/42617316711),
+  seis jobs aprovados; 126 testes backend e oito do microsservico sem ignorados.
+  Artefato `passed=true`: consumidor independente, SQLite persistente, dedupe,
+  token proprio, parada sem interromper CRUD e retomada sem promessa de replay.
+  Detalhes em [VALIDACAO_OPERACIONAL.md](VALIDACAO_OPERACIONAL.md).
+  Entrega tecnica em revisao, sem aceite humano/merge/deploy; sem reajuste
+  arbitrario da estimativa de 06/11.
+
 - [PR #44](https://github.com/Luizbc2/Schedra/pull/44), codigo 226be9d:
   [CI completo aprovado](https://github.com/Luizbc2/Schedra/actions/runs/42209605266),
   cinco jobs (backend, web, mobile, containers, tooling); **125 testes backend

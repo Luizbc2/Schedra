@@ -118,3 +118,9 @@ servico sem ignorados. Containers chegou a publicar/consumir entre processos,
 mas falhou apos reload do Nginx por socket reutilizado encerrado. A correcao
 isolou conexoes das sondas e melhorou contexto de erro, sem retry de escrita,
 sem retirar validacoes e sem converter falha parcial em sucesso.
+
+O CI seguinte, [42617316711](https://github.com/Luizbc2/Schedra/actions/runs/42617316711),
+aprovou os seis jobs; artefato baixado com passed=true e dez checks do
+microsservico verdadeiros. A revisao tecnica confirmou publicacao/consumo,
+persistencia, token e isolamento de reinicio; isso nao e aceite docente nem
+cerimonia Scrum. SCHED-58 segue para revisao, nao para Concluido.
