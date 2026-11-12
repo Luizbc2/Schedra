@@ -1,6 +1,7 @@
 """Generate editable Excalidraw boards and matching visual previews."""
 import json
 import math
+import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
@@ -9,6 +10,7 @@ OUT.mkdir(exist_ok=True)
 INK, MUTED, BORDER, ACCENT = "#24282B", "#61686D", "#C9D1D3", "#12695B"
 elements, previews, issues = [], [], []
 W, H = 1440, 920
+total_boards, file_prefix = 9, ""
 font_path = "C:/Windows/Fonts/arial.ttf"
 
 def font(size):
@@ -100,11 +102,119 @@ def page(n,title,subtitle):
     line([(56,128),(1384,128)])
     line([(56,H-58),(1384,H-58)])
     text(56,H-37,"Schedra  /  Engenharia de software",15,MUTED)
-    text(1230,H-37,f"{n:02} / 09",15,MUTED,width=154,center=True)
+    text(1230,H-37,f"{n:02} / {total_boards:02}",15,MUTED,width=154,center=True)
 
 def finish(n):
-    img.save(OUT/f"{n:02}.png")
+    img.save(OUT/f"{file_prefix}{n:02}.png")
     previews.append(img.resize((432,276)))
+
+def connector_clearance():
+    checks = 0
+    for label in (e for e in elements if e["type"] == "text"):
+        left, top = label["x"] - 8, label["y"] - 8
+        right, bottom = label["x"] + label["width"] + 8, label["y"] + label["height"] + 8
+        for edge in (e for e in elements if e["type"] in ("line", "arrow")):
+            points = [(edge["x"] + x, edge["y"] + y) for x, y in edge["points"]]
+            for (x1, y1), (x2, y2) in zip(points, points[1:]):
+                checks += 1
+                horizontal = y1 == y2 and top < y1 < bottom and max(x1, x2) > left and min(x1, x2) < right
+                vertical = x1 == x2 and left < x1 < right and max(y1, y2) > top and min(y1, y2) < bottom
+                if horizontal or vertical:
+                    issues.append(f"Connector clearance below 8px: {label['text']} ({edge['id']})")
+    if issues:
+        raise ValueError(issues)
+    return checks
+
+def export_scene(filename):
+    scene = {"type": "excalidraw", "version": 2, "source": "https://excalidraw.com", "elements": elements,
+             "appState": {"viewBackgroundColor": "#F1F3F3", "theme": "light", "gridSize": None}, "files": {}}
+    (OUT / filename).write_text(json.dumps(scene, ensure_ascii=False, indent=2), encoding="utf8")
+
+def build_current():
+    global total_boards, file_prefix
+    total_boards, file_prefix = 3, "atual-"
+    page(1, "C4 | Contexto do Schedra", "Pessoas, responsabilidades e limites do produto implementado.")
+    text(64, 163, "PESSOAS", 17, MUTED)
+    text(856, 163, "SISTEMA", 17, MUTED)
+    box(64, 213, 320, 96, "Usu\u00e1rio pessoal", size=23)
+    box(64, 385, 320, 96, "Gestor de empresa", size=23)
+    box(64, 557, 320, 96, "Administrador da plataforma", size=23)
+    box(856, 200, 500, 470, "Schedra\nAgenda pessoal e empresarial", "#EDF5F2", 31)
+    for y, label in [(261, "Organiza compromissos privados"), (433, "Agenda atendimentos e gerencia cadastros"),
+                     (605, "Administra contas com permiss\u00e3o")]:
+        line([(396, y), (844, y)], ACCENT, True)
+        text(423, y - 40, label, 19, MUTED, width=400, center=True)
+    text(64, 753, "Limite do sistema", 22)
+    text(64, 791, "Web e aplicativo acessam a API do Schedra. Redis, bancos e o microsservi\u00e7o s\u00e3o internos ao produto.",
+         18, MUTED, width=1290)
+    finish(1)
+
+    page(2, "C4 | Containers e comunica\u00e7\u00e3o", "Perfil de valida\u00e7\u00e3o em Compose. Opera\u00e7\u00f5es de dados e m\u00e9tricas usam redes privadas.")
+    for x, y, label, fill in [
+        (60, 205, "Web\nReact e Vite", "#FFFFFF"),
+        (400, 205, "Aplicativo\nReact Native e Expo", "#FFFFFF"),
+        (740, 205, "SQLite no aparelho\nCache e fotos", "#F4F6F7"),
+        (60, 443, "Nginx\nProxy reverso", "#FFFFFF"),
+        (400, 443, "API Express\nMon\u00f3lito modular", "#EDF5F2"),
+        (740, 443, "Redis\nCache e Pub/Sub", "#FFF6E7"),
+        (1080, 443, "Microsservi\u00e7o de eventos\nAtividade operacional", "#EDF5F2"),
+        (60, 688, "Prometheus\nM\u00e9tricas e regras", "#F4F6F7"),
+        (400, 688, "Banco central\nPostgreSQL na valida\u00e7\u00e3o", "#F4F6F7"),
+        (1080, 688, "SQLite de eventos\nRecibos e totais", "#F4F6F7"),
+    ]:
+        box(x, y, 245, 110 if y == 443 else 106, label, fill, 19)
+    for points, tx, ty, label in [
+        ([(657, 258), (728, 258)], 663, 222, "SQL"),
+        ([(182, 323), (182, 431)], 202, 360, "HTTP"),
+        ([(522, 323), (522, 431)], 542, 360, "HTTP(S) e JSON"),
+        ([(317, 498), (388, 498)], 322, 462, "HTTP"),
+        ([(657, 498), (728, 498)], 662, 462, "RESP"),
+        ([(997, 498), (1068, 498)], 997, 462, "Pub/Sub"),
+        ([(522, 565), (522, 676)], 542, 602, "SQL"),
+        ([(1202, 565), (1202, 676)], 1222, 602, "SQL"),
+        ([(317, 732), (350, 732), (350, 612), (435, 612), (435, 565)], 366, 638, "Scrape API"),
+        ([(182, 806), (182, 836), (1357, 836), (1357, 509), (1337, 509)], 600, 800, "Scrape do microsservi\u00e7o"),
+    ]:
+        line(points, ACCENT, True)
+        text(tx, ty, label, 16, MUTED)
+    text(1080, 209, "A API publica eventos v1.\nO consumidor possui processo\ne armazenamento pr\u00f3prios.",
+         17, MUTED, width=245)
+    finish(2)
+
+    page(3, "DDD | Mapa de contextos", "As setas apontam de quem fornece informa\u00e7\u00e3o para quem a utiliza.")
+    box(530, 161, 380, 90, "Identidade e acesso\nSess\u00e3o, ator e permiss\u00f5es", "#F4F6F7")
+    for x, y, label, fill in [
+        (80, 365, "Cat\u00e1logo e equipe\nClientes, servi\u00e7os e jornadas", "#FFF6E7"),
+        (555, 365, "Agenda empresarial\nAgendamento e reserva", "#EDF5F2"),
+        (1020, 365, "Agenda pessoal\nCompromissos privados", "#EDF5F2"),
+        (80, 630, "Atividade operacional\nProje\u00e7\u00e3o no microsservi\u00e7o", "#FFFFFF"),
+        (555, 630, "Auditoria\nRegistro de a\u00e7\u00f5es confirmadas", "#FFFFFF"),
+        (1020, 630, "Conta e administra\u00e7\u00e3o\nPerfil e gest\u00e3o de usu\u00e1rios", "#FFFFFF"),
+    ]:
+        box(x, y, 330, 110, label, fill, 20)
+    for points, tx, ty, label in [
+        ([(610, 263), (610, 305), (245, 305), (245, 353)], 277, 272, "Ator e organiza\u00e7\u00e3o"),
+        ([(720, 263), (720, 353)], 740, 316, "Contexto"),
+        ([(810, 263), (810, 305), (1185, 305), (1185, 353)], 1010, 272, "Identidade do usu\u00e1rio"),
+        ([(922, 205), (1374, 205), (1374, 686), (1362, 686)], 1052, 171, "Permiss\u00f5es"),
+        ([(422, 420), (543, 420)], 432, 382, "Contratos"),
+        ([(245, 487), (245, 618)], 270, 531, "Evento v1\nPub/Sub"),
+        ([(370, 487), (370, 566), (610, 566), (610, 618)], 412, 529, "A\u00e7\u00e3o do cat\u00e1logo"),
+        ([(720, 487), (720, 618)], 743, 531, "A\u00e7\u00e3o de agenda"),
+        ([(1008, 686), (897, 686)], 908, 649, "A\u00e7\u00e3o admin"),
+    ]:
+        line(points, ACCENT, True)
+        text(tx, ty, label, 17, MUTED)
+    text(64, 788, "A raiz Agendamento protege slots e vers\u00e3o. Intervalo e pre\u00e7o s\u00e3o objetos de valor no fluxo de cria\u00e7\u00e3o.",
+         18, MUTED, width=1300)
+    finish(3)
+    checks = connector_clearance()
+    export_scene("Schedra-arquitetura-atual.excalidraw")
+    print(f"Verified {total_boards} current boards and {checks} text/connector pairs.")
+
+if sys.argv[1:] == ["--current"]:
+    build_current()
+    sys.exit(0)
 
 page(1,"Arquitetura futura","PWA, sincronização e notificações ampliam a plataforma existente.")
 box(60,210,245,110,"Aplicação web\nReact + PWA")
@@ -237,24 +347,8 @@ for i,row in enumerate(rows):
 text(66,793,"Status atual: proposta documentada. A implementação seguirá o backlog de PRODUCT_EVOLUTION.md.",17,MUTED,width=1310)
 finish(9)
 
-# Verify actual text rectangles against every orthogonal connector, not just board edges.
-checked_gaps=0
-for label in (e for e in elements if e['type']=='text'):
-    left,top=label['x']-8,label['y']-8
-    right,bottom=label['x']+label['width']+8,label['y']+label['height']+8
-    for edge in (e for e in elements if e['type'] in ('line','arrow')):
-        points=[(edge['x']+x,edge['y']+y) for x,y in edge['points']]
-        for (x1,y1),(x2,y2) in zip(points,points[1:]):
-            checked_gaps+=1
-            horizontal=y1==y2 and top<y1<bottom and max(x1,x2)>left and min(x1,x2)<right
-            vertical=x1==x2 and left<x1<right and max(y1,y2)>top and min(y1,y2)<bottom
-            if horizontal or vertical:
-                issues.append(f"Connector clearance below 8px: {label['text']} ({edge['id']})")
-if issues: raise ValueError(issues)
-
-scene={"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":elements,
-       "appState":{"viewBackgroundColor":"#F1F3F3","theme":"light","gridSize":None},"files":{}}
-(OUT/"Schedra-revisado.excalidraw").write_text(json.dumps(scene,ensure_ascii=False,indent=2),encoding="utf8")
+checked_gaps = connector_clearance()
+export_scene("Schedra-revisado.excalidraw")
 contact=Image.new("RGB",(3*448,3*292),"#E4E8E8")
 for i,preview in enumerate(previews):contact.paste(preview,((i%3)*448+8,(i//3)*292+8))
 contact.save(OUT/"overview.png")

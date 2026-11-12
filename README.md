@@ -193,6 +193,7 @@ O workflow em `.github/workflows/quality.yml` executa as verificações automati
 | Documento | Conteúdo |
 | --- | --- |
 | [Índice da documentação](docs/README.md) | Ponto de entrada e ordem sugerida de leitura |
+| [Fechamento da rubrica](docs/FECHAMENTO_RUBRICA.md) | Matriz de demonstração, pranchas C4/DDD, pipeline e evidências do PR |
 | [Proposta de evolução](docs/PROPOSTA.md) | Lacunas atuais e implementações futuras |
 | [Requisitos futuros](docs/REQUIREMENTS.md) | Requisitos funcionais, não funcionais e aceite |
 | [Diagramas](docs/DIAGRAMS.md) | Arquitetura, casos de uso, atividades e sequências |

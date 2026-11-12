@@ -4,6 +4,7 @@ O planejamento da próxima entrega foi revisado em 22/10/2026. Começar pela nov
 
 | Documento | Finalidade |
 | --- | --- |
+| [Fechamento da rubrica](FECHAMENTO_RUBRICA.md) | Candidata integrada no PR #46, mapa dos 12 criterios e M1, pranchas atuais, evidencias e runbook |
 | [Nova entrega de arquitetura e backend](NOVA_ENTREGA_ARQUITETURA.md) | Rubrica recebida por imagem: C4, DDD, ADRs, Redis, Pub/Sub, Docker/Nginx, qualidade e Jira |
 | [Avaliacao atual](AVALIACAO_NOVA_ENTREGA.md) | Estimativa ponderada, evidencias verificadas e pendencias, sem prometer nota |
 | [Contexto e ciclos reais](GESTAO_CICLOS.md) | Cynefin aplicado, escolha agil e registro honesto dos ciclos executados |

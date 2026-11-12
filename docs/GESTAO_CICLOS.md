@@ -124,3 +124,17 @@ aprovou os seis jobs; artefato baixado com passed=true e dez checks do
 microsservico verdadeiros. A revisao tecnica confirmou publicacao/consumo,
 persistencia, token e isolamento de reinicio; isso nao e aceite docente nem
 cerimonia Scrum. SCHED-58 segue para revisao, nao para Concluido.
+
+## Revisao tecnica da candidata em 12/11
+
+O trabalho de SCHED-57 e SCHED-55 comecou durante a Sprint 1. A candidata
+[PR #46](https://github.com/Luizbc2/Schedra/pull/46) inclui os commits dos
+PRs #41 a #45 sem reaplicacao. Nesta etapa o problema foi predominantemente
+complicado: contratos e fronteiras de processos podiam ser conferidos no
+codigo e provados por ensaio. A checagem geometrica detectou um rotulo muito
+proximo de um conector; o layout foi corrigido antes da revisao visual.
+
+O responsavel escolheu deixar o PR pronto para revisao, sem merge.
+[Matriz e roteiro da candidata](FECHAMENTO_RUBRICA.md). Os resultados
+automatizados pertencem aos checks do commit no GitHub; nao sao aprovacao
+humana, release lancada ou fechamento antecipado da Sprint 2.

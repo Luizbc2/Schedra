@@ -7,6 +7,11 @@ Os modelos antigos de evolucao continuam sendo propostas. Referencias:
 [qualidade](QUALITY.md), [Redis](../REDIS_OPERACAO.md),
 [microsservico](../../Microservico-Eventos/README.md).
 
+As [pranchas atuais em Excalidraw](../diagrams/Schedra-arquitetura-atual.excalidraw)
+estao separadas da proposta de evolucao. Previews:
+[Contexto](../diagrams/atual-01.png),
+[Containers](../diagrams/atual-02.png) e [Context Map](../diagrams/atual-03.png).
+
 ## C4 - Contexto
 
 ```mermaid
@@ -24,6 +29,8 @@ C4Context
 Autenticacao e banco pertencem ao Schedra; nao sao sistemas externos neste nivel. GitHub, Expo e Vercel sao ferramentas de construcao/entrega, nao atores de agendamento.
 
 ## C4 - Containers
+
+![C4 Containers do Schedra na stack de validacao](../diagrams/atual-02.png)
 
 ```mermaid
 C4Container
