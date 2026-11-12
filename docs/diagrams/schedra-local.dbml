@@ -1,0 +1,225 @@
+// Schema local implementado. Gerado do SQL real por npm run docs:local-db.
+// IDs de cliente/profissional/servico em appointments sao IDs da API, sem FK entre bancos.
+// preferences.scopeId tambem aceita device; por isso nao possui FK para scopes.
+Project Schedra_Local {
+  database_type: 'SQLite'
+  Note: 'Persistencia do aplicativo. Tokens ficam no SecureStore. Outbox de avatar ativa; comandos de negocio offline ainda pendentes.'
+}
+
+Table appointments {
+  id text [pk, not null]
+  scopeId text [not null]
+  remoteId integer
+  remoteVersion integer
+  syncStatus text [not null]
+  updatedAt integer [not null]
+  deletedAt integer
+  clientId integer [not null]
+  clientName text [not null]
+  professionalId integer [not null]
+  professionalName text [not null]
+  serviceId integer [not null]
+  serviceName text [not null]
+  scheduledAt text [not null]
+  endsAt text [not null]
+  durationMinutes integer [not null]
+  priceSnapshot double [not null]
+  status text [not null]
+  notes text [not null]
+
+  indexes {
+    (scopeId, scheduledAt) [name: 'appointments_scope_date']
+    (id, scopeId) [unique]
+    (scopeId, remoteId) [unique]
+  }
+}
+
+Table clients {
+  id text [pk, not null]
+  scopeId text [not null]
+  remoteId integer
+  remoteVersion integer
+  syncStatus text [not null]
+  updatedAt integer [not null]
+  deletedAt integer
+  name text [not null]
+  email text [not null]
+  phone text [not null]
+  cpf text [not null]
+  notes text [not null]
+
+  indexes {
+    (scopeId, name) [name: 'clients_scope_name']
+    (id, scopeId) [unique]
+    (scopeId, remoteId) [unique]
+  }
+}
+
+Table media_assets {
+  id text [pk, not null]
+  scopeId text [not null]
+  ownerId integer [not null]
+  content blob [not null]
+  mimeType text [not null]
+  byteSize integer [not null]
+  checksum text [not null]
+  width integer [not null]
+  height integer [not null]
+  remoteUrl text
+  syncStatus text [not null]
+  createdAt integer [not null]
+  updatedAt integer [not null]
+
+  indexes {
+    (scopeId, updatedAt) [name: 'media_scope']
+    (id, scopeId) [unique]
+  }
+}
+
+Table outbox {
+  id text [pk, not null]
+  scopeId text [not null]
+  entityType text [not null]
+  entityId text [not null]
+  action text [not null]
+  payload text [not null]
+  mediaId text
+  baseVersion integer
+  dependencyId text
+  attempts integer [not null, default: 0]
+  nextAttemptAt integer [not null]
+  status text [not null]
+  lastError text
+  createdAt integer [not null]
+
+  indexes {
+    (scopeId, status, nextAttemptAt) [name: 'outbox_ready']
+  }
+}
+
+Table personal_events {
+  id text [pk, not null]
+  scopeId text [not null]
+  remoteId integer
+  remoteVersion integer
+  syncStatus text [not null]
+  updatedAt integer [not null]
+  deletedAt integer
+  title text [not null]
+  startsAt text [not null]
+  endsAt text [not null]
+  location text [not null]
+  notes text [not null]
+  reminderMinutes integer [not null]
+  completed integer [not null]
+
+  indexes {
+    (scopeId, startsAt) [name: 'personal_events_scope_date']
+    (id, scopeId) [unique]
+    (scopeId, remoteId) [unique]
+  }
+}
+
+Table preferences {
+  id text [pk, not null]
+  scopeId text [not null]
+  value text [not null]
+
+  indexes {
+    (scopeId) [name: 'preferences_scope']
+  }
+}
+
+Table professionals {
+  id text [pk, not null]
+  scopeId text [not null]
+  remoteId integer
+  remoteVersion integer
+  syncStatus text [not null]
+  updatedAt integer [not null]
+  deletedAt integer
+  name text [not null]
+  email text [not null]
+  phone text [not null]
+  specialty text [not null]
+  status text [not null]
+
+  indexes {
+    (scopeId, name) [name: 'professionals_scope_name']
+    (id, scopeId) [unique]
+    (scopeId, remoteId) [unique]
+  }
+}
+
+Table profiles {
+  id text [pk, not null]
+  scopeId text [not null]
+  userId integer [not null]
+  name text [not null]
+  email text [not null]
+  cpf text [not null]
+  accountType text [not null]
+  role text [not null]
+  active integer [not null]
+  avatarUrl text
+  organizationJson text
+
+  indexes {
+    (scopeId) [name: 'profiles_scope']
+  }
+}
+
+Table scopes {
+  id text [pk, not null]
+  userId integer [not null]
+  organizationId integer
+  mode text [not null]
+
+  indexes {
+    (userId) [name: 'scopes_user']
+  }
+}
+
+Table services {
+  id text [pk, not null]
+  scopeId text [not null]
+  remoteId integer
+  remoteVersion integer
+  syncStatus text [not null]
+  updatedAt integer [not null]
+  deletedAt integer
+  name text [not null]
+  category text [not null]
+  durationMinutes integer [not null]
+  price double [not null]
+  description text [not null]
+
+  indexes {
+    (scopeId, name) [name: 'services_scope_name']
+    (id, scopeId) [unique]
+    (scopeId, remoteId) [unique]
+  }
+}
+
+Table sync_state {
+  id text [pk, not null]
+  scopeId text [not null]
+  resource text [not null]
+  recordIds text [not null]
+  updatedAt integer [not null]
+
+  indexes {
+    (scopeId, resource) [name: 'sync_scope']
+  }
+}
+
+Ref: appointments.scopeId > scopes.id [delete: cascade]
+Ref: clients.scopeId > scopes.id [delete: cascade]
+Ref: media_assets.scopeId > scopes.id [delete: cascade]
+Ref: outbox.(mediaId, scopeId) > media_assets.(id, scopeId)
+Ref: outbox.scopeId > scopes.id [delete: cascade]
+Ref: personal_events.scopeId > scopes.id [delete: cascade]
+Ref: professionals.scopeId > scopes.id [delete: cascade]
+Ref: profiles.scopeId > scopes.id [delete: cascade]
+Ref: services.scopeId > scopes.id [delete: cascade]
+Ref: sync_state.scopeId > scopes.id [delete: cascade]

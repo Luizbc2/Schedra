@@ -52,9 +52,18 @@ flowchart LR
     AUTH --> DB[(PostgreSQL ou MySQL)]
     DOMAIN --> DB
     ADMIN --> DB
+    API --> REDIS[(Redis: cache e Pub/Sub)]
+    REDIS --> EVENTS[Microsservico de atividade<br/>Node + TypeScript]
+    EVENTS --> EVENTDB[(SQLite exclusivo<br/>recibos e projecao)]
 ```
 
 O frontend web e o aplicativo consomem a mesma API. No backend, o fluxo segue `rota → controller → service → model/repository → banco`, mantendo autorização e regras de negócio fora das interfaces.
+
+O [microsservico de atividade](Microservico-Eventos/README.md) consome os eventos
+publicados pela API e mantem sua propria projecao SQLite. Possui pacote, imagem,
+configuracao, healthcheck, testes e deploy independentes; nao importa o backend
+nem acessa seu banco. A API principal continua modular. Este incremento esta em
+revisao, nao significa que o servico ja foi publicado no ambiente produtivo.
 
 ### Organização do repositório
 
@@ -63,6 +72,8 @@ Horarius/
 ├── Frontend-Schedra/      # SPA React e Vite
 ├── Backend-Schedra/       # API Express e TypeScript
 ├── Aplicativo-Schedra/    # Aplicativo React Native e Expo
+├── Microservico-Eventos/  # Consumidor e projecao de atividade independentes
+├── contracts/            # Contrato JSON v1 e exemplos
 ├── docs/                  # Proposta, requisitos, diagramas e operação
 ├── infra/                 # Nginx e certificados locais
 ├── tests/                 # Cenários end-to-end
@@ -182,6 +193,7 @@ O workflow em `.github/workflows/quality.yml` executa as verificações automati
 | Documento | Conteúdo |
 | --- | --- |
 | [Índice da documentação](docs/README.md) | Ponto de entrada e ordem sugerida de leitura |
+| [Fechamento da rubrica](docs/FECHAMENTO_RUBRICA.md) | Matriz de demonstração, pranchas C4/DDD, pipeline e evidências do PR |
 | [Proposta de evolução](docs/PROPOSTA.md) | Lacunas atuais e implementações futuras |
 | [Requisitos futuros](docs/REQUIREMENTS.md) | Requisitos funcionais, não funcionais e aceite |
 | [Diagramas](docs/DIAGRAMS.md) | Arquitetura, casos de uso, atividades e sequências |

@@ -20,6 +20,7 @@ describe("HTTP safety middleware", () => {
     app.use(securityHeaders);
     app.use(createRateLimiter({ windowMs: 60_000, maxRequests: 2 }));
     app.get("/resource", (_request, response) => response.status(200).json({ ok: true }));
+    app.get("/resource/:id", (_request, response) => response.status(200).json({ ok: true }));
     app.get("/invalid", (_request, response) => response.status(400).json({ message: "Entrada inválida." }));
     return app;
   };
@@ -28,6 +29,11 @@ describe("HTTP safety middleware", () => {
     const response = await request(buildApp()).get("/resource").set("x-request-id", "request-test-1");
     expect(response.headers["x-request-id"]).toBe("request-test-1");
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
+  });
+  it("substitui um requestId fora do contrato antes de publicar eventos ou logs", async () => {
+    const response = await request(buildApp()).get("/resource").set("x-request-id", "private@email.test");
+    expect(response.headers["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(response.headers["x-request-id"]).not.toContain("private");
   });
 
   it("padroniza erros esperados que saem diretamente dos controladores", async () => {
@@ -53,5 +59,24 @@ describe("HTTP safety middleware", () => {
     const metrics = renderPrometheusMetrics();
     expect(metrics).toContain('route="/resource/:id"');
     expect(metrics).toContain("schedra_http_requests_total");
+    expect(metrics).toContain('schedra_http_request_duration_seconds_bucket{method="GET",route="/resource/:id",status="200",le="+Inf"} 1');
+    await request(app).get("/path-with-sensitive-input");
+    const unmatched = renderPrometheusMetrics();
+    expect(unmatched).not.toContain("path-with-sensitive-input");
+    expect(unmatched).toContain('route="_unmatched"');
+  });
+  it("preserva o prefixo do router nas series de negocio", async () => {
+    resetMetricsForTests();
+    const app = express();
+    app.use(requestMetricsMiddleware);
+    const router = express.Router();
+    router.get("/", (_request, response) => response.json({ items: [] }));
+    router.get("/:id", (_request, response) => response.json({ id: 1 }));
+    app.use("/api/clients", router);
+    await request(app).get("/api/clients");
+    await request(app).get("/api/clients/17");
+    const metrics = renderPrometheusMetrics();
+    expect(metrics).toContain('route="/api/clients"');
+    expect(metrics).toContain('route="/api/clients/:id"');
   });
 });

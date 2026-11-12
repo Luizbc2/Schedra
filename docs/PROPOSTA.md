@@ -1,5 +1,7 @@
 # Schedra - proposta de evolução
 
+> Revisão de planejamento em 22/10/2026: a próxima entrega inclui componentização mobile, SQLite para dados e fotos locais e revisão completa dos diagramas. A ordem atual está no [plano de reestruturação](PLANO_REESTRUTURACAO.md), vinculada à [rubrica de outubro](RUBRICA_OUTUBRO_2026.md). As funcionalidades abaixo continuam propostas; este documento ainda será consolidado com a nova arquitetura.
+
 ## Calendário inteligente, notificações, continuidade offline e administração web
 
 ### Resumo

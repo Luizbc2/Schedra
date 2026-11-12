@@ -22,8 +22,8 @@ export class ListClientsService {
 
   public async execute(userId: number, query: ListClientsQueryDto): Promise<ListClientsServiceResult> {
     const page = this.normalizePositiveNumber(query.page, DEFAULT_PAGE);
-    const limit = this.normalizePositiveNumber(query.limit, DEFAULT_LIMIT);
-    const search = query.search?.trim() ?? "";
+    const limit = Math.min(100, this.normalizePositiveNumber(query.limit, DEFAULT_LIMIT));
+    const search = (query.search?.trim().toLowerCase() ?? "").slice(0, 120);
 
     const { clients, totalItems } = await this.clientRepository.list(userId, {
       page,
@@ -44,7 +44,7 @@ export class ListClientsService {
   }
 
   private normalizePositiveNumber(value: number | undefined, fallback: number): number {
-    if (!value || Number.isNaN(value)) {
+    if (!value || !Number.isFinite(value)) {
       return fallback;
     }
 

@@ -17,6 +17,7 @@ type AppointmentFields = {
 export function personalEventInput(
   fields: PersonalFields,
   original?: PersonalEvent,
+  now = Date.now(),
 ) {
   const duration = original
     ? Date.parse(original.endsAt) - Date.parse(original.startsAt)
@@ -27,6 +28,9 @@ export function personalEventInput(
     duration <= 0
   ) {
     throw new Error("Informe uma data e um intervalo válidos.");
+  }
+  if (fields.date.getTime() <= now) {
+    throw new Error("Escolha uma data e um horário futuros.");
   }
   return {
     title: fields.title.trim(),
@@ -42,8 +46,15 @@ export function personalEventInput(
 export function appointmentInput(
   fields: AppointmentFields,
   original?: Appointment,
+  now = Date.now(),
 ) {
   const { date, ...values } = fields;
+  if (!Number.isFinite(date.getTime())) {
+    throw new Error("Informe uma data e um horário válidos.");
+  }
+  if (date.getTime() <= now) {
+    throw new Error("Escolha uma data e um horário futuros.");
+  }
   return {
     ...values,
     scheduledAt: date.toISOString(),

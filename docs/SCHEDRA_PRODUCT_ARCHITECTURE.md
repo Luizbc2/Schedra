@@ -53,7 +53,8 @@ A evolução documentada acrescenta `notification_preferences`, `reminders` e `s
 
 ## Linha de base técnica
 
-- A API permanece como fonte única de dados.
+- A API permanece como fonte de verdade para a agenda e os cadastros. O
+  microsserviço de eventos mantém apenas uma projeção operacional independente.
 - Cores e marca já estão isoladas em TypeScript.
 - O contrato de autenticação com access token curto e refresh rotativo é compartilhado por web e mobile.
 - `memberships`, `roles` e `permissions` permitem sessões com escopos adequados no app.
@@ -72,6 +73,14 @@ A evolução documentada acrescenta `notification_preferences`, `reminders` e `s
 ## Implementação atual usada como ponto de partida
 
 O backend opera como monólito modular multiempresa. Usuários acessam organizações por meio de vínculos com papéis e permissões; clientes, profissionais, serviços e agendamentos são isolados pela organização ativa da sessão. Contas existentes recebem automaticamente um workspace padrão e seus registros legados são vinculados durante o bootstrap.
+
+Na candidata atual, a API publica eventos de clientes após confirmar a escrita.
+O [microsserviço de eventos](../Microservico-Eventos/README.md) assina o Redis
+Pub/Sub em processo separado e guarda recibos e contagens em SQLite próprio,
+distinto do banco central e do SQLite do aparelho. Ele não envia notificações,
+não oferece replay e não é necessário para gravar um cliente. Ver
+[C4 e decisões arquiteturais](architecture/README.md) e
+[evidência da validação](VALIDACAO_OPERACIONAL.md).
 
 Os agendamentos persistem início, fim, duração, preço e snapshots de cliente, profissional e serviço no momento da reserva. Slots transacionais de cinco minutos impedem sobreposição inclusive sob concorrência, enquanto `version` evita sobrescrita silenciosa. Regras semanais, intervalos, serviços habilitados e bloqueios de agenda são validados antes da transação. Mudanças de status e operações administrativas sensíveis geram histórico e auditoria.
 

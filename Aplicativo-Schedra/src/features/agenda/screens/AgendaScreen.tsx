@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   AppState,
   Modal,
@@ -10,13 +9,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "../../../shared/components/AppHeader";
 import { Screen } from "../../../shared/components/Screen";
+import { LocalDataHint } from "../../../shared/components/LocalDataHint";
+import type { LocalResult } from "../../../shared/database/cached-query";
+import { Button } from "../../../shared/components/ui/Button";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { FormField } from "../../../shared/components/ui/FormField";
+import { FeedbackState } from "../../../shared/components/ui/FeedbackState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts, type AppColors } from "../../../theme/tokens";
 import { useAuth } from "../../auth/AuthProvider";
@@ -109,6 +113,7 @@ export function AgendaScreen() {
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [localResult, setLocalResult] = useState<LocalResult | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<AgendaItem | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -125,6 +130,7 @@ export function AgendaScreen() {
       if (personal) {
         const response = await agendaApi.listPersonal(token);
         if (version !== loadVersion.current) return;
+        setLocalResult(response.local);
         setItems(
           response.items
             .map((event) => ({
@@ -141,6 +147,7 @@ export function AgendaScreen() {
       } else {
         const response = await agendaApi.listAppointments(token);
         if (version !== loadVersion.current) return;
+        setLocalResult(response.local);
         setItems(
           response.data
             .map((appointment) => ({
@@ -245,6 +252,11 @@ export function AgendaScreen() {
     setPersonalSection(dayKey < todayKey ? "history" : "upcoming");
   };
 
+  const selectPersonalSection = (section: PersonalSection) => {
+    setSelectedDay(null);
+    setPersonalSection(section);
+  };
+
   return (
     <Screen
       header={
@@ -254,19 +266,16 @@ export function AgendaScreen() {
         />
       }
       floatingAction={
-        <Pressable
+        <IconButton
           accessibilityLabel={
             personal ? "Novo compromisso" : "Novo agendamento"
           }
+          icon="add"
+          variant="primary"
+          size="large"
           onPress={() => openEditor()}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.accent },
-            pressed && agendaStyles.fabPressed,
-          ]}
-        >
-          <Ionicons name="add" color="#FFF" size={28} />
-        </Pressable>
+          style={styles.fab}
+        />
       }
     >
       <View>
@@ -295,6 +304,7 @@ export function AgendaScreen() {
           color={colors.amber}
         />
       </View>
+      <LocalDataHint result={localResult} />
 
       {personal ? (
         <PersonalMonthCalendar
@@ -331,7 +341,7 @@ export function AgendaScreen() {
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
                   key={section}
-                  onPress={() => setPersonalSection(section)}
+                  onPress={() => selectPersonalSection(section)}
                   style={({ pressed }) => [
                     agendaStyles.segment,
                     selected && {
@@ -380,44 +390,22 @@ export function AgendaScreen() {
               </Text>
             ) : null}
           </View>
-          <Pressable
+          <IconButton
             accessibilityLabel="Recarregar"
+            icon="refresh"
+            loading={loading}
             onPress={load}
-            style={({ pressed }) => [
-              agendaStyles.refreshButton,
-              {
-                backgroundColor: colors.surfaceRaised,
-                borderColor: colors.border,
-              },
-              pressed && agendaStyles.segmentPressed,
-            ]}
-          >
-            <Ionicons name="refresh" size={18} color={colors.textMuted} />
-          </Pressable>
+          />
         </View>
 
         {loading ? (
-          <ActivityIndicator style={styles.loader} color={colors.accent} />
+          <FeedbackState kind="loading" title="Carregando agenda" />
         ) : visibleItems.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons
-              name={
-                personalSection === "history"
-                  ? "archive-outline"
-                  : "calendar-outline"
-              }
-              size={28}
-              color={colors.textMuted}
-            />
-            <Text
-              style={[
-                styles.emptyText,
-                { color: loadError ? colors.danger : colors.textMuted },
-              ]}
-            >
-              {loadError || emptyMessage}
-            </Text>
-          </View>
+          <FeedbackState kind={loadError ? "error" : "empty"}
+            title={loadError ? "Falha ao carregar" : "Nenhum compromisso"}
+            detail={loadError || emptyMessage}
+            icon={personalSection === "history" ? "archive-outline" : "calendar-outline"}
+            action={loadError ? { label: "Tentar novamente", onPress: load } : undefined} />
         ) : (
           visibleItems.map((item, index) => {
             const historical = personal && personalSection === "history";
@@ -700,9 +688,7 @@ function AgendaEditor({
               {personal ? "Compromisso" : "Agendamento"}
             </Text>
           </View>
-          <Pressable accessibilityLabel="Fechar" onPress={onClose}>
-            <Ionicons name="close" size={25} color={colors.text} />
-          </Pressable>
+          <IconButton accessibilityLabel="Fechar" icon="close" onPress={onClose} disabled={saving} />
         </View>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -715,14 +701,14 @@ function AgendaEditor({
           ) : null}
           {personal ? (
             <>
-              <AgendaField
-                colors={colors}
+              <FormField
+                editable={!saving}
                 label="Título"
                 value={title}
                 onChangeText={setTitle}
               />
-              <AgendaField
-                colors={colors}
+              <FormField
+                editable={!saving}
                 label="Local"
                 value={location}
                 onChangeText={setLocation}
@@ -775,68 +761,30 @@ function AgendaEditor({
             onChange={setDate}
             colors={colors}
           />
-          <AgendaField
-            colors={colors}
+          <FormField
+            editable={!saving}
             label="Observações"
             value={notes}
             onChangeText={setNotes}
             multiline
           />
-          <Pressable
-            disabled={saving}
+          <Button
+            label={personal ? "Salvar compromisso" : "Salvar agendamento"}
+            loading={saving}
             onPress={save}
-            style={[
-              styles.saveButton,
-              { backgroundColor: colors.accent, opacity: saving ? 0.6 : 1 },
-            ]}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.saveText}>Salvar compromisso</Text>
-            )}
-          </Pressable>
+          />
           {item ? (
-            <Pressable
+            <Button
+              label={personal ? "Excluir compromisso" : "Excluir agendamento"}
+              variant="destructive"
+              icon="trash-outline"
               disabled={saving}
               onPress={remove}
-              style={[styles.deleteButton, { borderColor: colors.danger }]}
-            >
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
-              <Text style={[styles.deleteText, { color: colors.danger }]}>
-                Excluir compromisso
-              </Text>
-            </Pressable>
+            />
           ) : null}
         </ScrollView>
       </SafeAreaView>
     </Modal>
-  );
-}
-
-function AgendaField({
-  colors,
-  label,
-  ...props
-}: { colors: AppColors; label: string } & React.ComponentProps<
-  typeof TextInput
->) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
-      <TextInput
-        placeholderTextColor={colors.textMuted}
-        style={[
-          styles.input,
-          {
-            color: colors.text,
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-        {...props}
-      />
-    </View>
   );
 }
 
@@ -963,14 +911,6 @@ const styles = StyleSheet.create({
   form: { gap: 19, paddingHorizontal: 22, paddingBottom: 40 },
   field: { gap: 7 },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 13 },
-  input: {
-    minHeight: 52,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
-    fontFamily: fonts.body,
-    fontSize: 14,
-  },
   chips: { gap: 8 },
   chip: {
     minHeight: 42,
@@ -980,22 +920,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chipText: { fontFamily: fonts.bodyMedium, fontSize: 13 },
-  saveButton: {
-    minHeight: 54,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  saveText: { color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 15 },
-  deleteButton: {
-    minHeight: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  deleteText: { fontFamily: fonts.bodyBold, fontSize: 14 },
 });

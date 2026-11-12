@@ -1,0 +1,29 @@
+[
+  {
+    "eventId": "0db65567-370d-42fc-b8b4-52ee6d05f301",
+    "version": 1,
+    "type": "client.created",
+    "scope": "org:1",
+    "entityId": 1,
+    "occurredAt": "2026-11-09T12:00:00.000Z",
+    "requestId": "request-contract-created"
+  },
+  {
+    "eventId": "0db65567-370d-42fc-b8b4-52ee6d05f302",
+    "version": 1,
+    "type": "client.updated",
+    "scope": "user:2",
+    "entityId": 2,
+    "occurredAt": "2026-11-09T12:01:00.000Z",
+    "requestId": "request-contract-updated"
+  },
+  {
+    "eventId": "0db65567-370d-42fc-b8b4-52ee6d05f303",
+    "version": 1,
+    "type": "client.deleted",
+    "scope": "org:1",
+    "entityId": 1,
+    "occurredAt": "2026-11-09T12:02:00.000Z",
+    "requestId": "request-contract-deleted"
+  }
+]

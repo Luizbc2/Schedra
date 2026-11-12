@@ -1,0 +1,36 @@
+# Optional LOCAL overlay: docker compose -f docker-compose.yml -f compose.events.yml up --build -d
+# Requires the base .env and a dedicated EVENTS_METRICS_TOKEN. Not a production manifest.
+services:
+  redis:
+    image: redis:8.2-alpine
+    command: [redis-server, --maxmemory, 64mb, --maxmemory-policy, allkeys-lru, --save, "", --appendonly, "no"]
+    networks: [data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  backend:
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REDIS_PREFIX: schedra:v1
+    depends_on:
+      redis: { condition: service_healthy }
+  events:
+    build: ./Microservico-Eventos
+    init: true
+    restart: unless-stopped
+    environment:
+      PORT: "3334"
+      REDIS_URL: redis://redis:6379/0
+      EVENTS_CHANNEL: schedra:v1:events:v1
+      EVENTS_DB_PATH: /data/activity.sqlite
+      EVENTS_METRICS_TOKEN: ${EVENTS_METRICS_TOKEN:?Set a dedicated EVENTS_METRICS_TOKEN}
+      EVENTS_RETENTION_DAYS: "30"
+    ports: ["127.0.0.1:3334:3334"]
+    volumes: ["event_activity_data:/data"]
+    networks: [data]
+    depends_on:
+      redis: { condition: service_healthy }
+volumes:
+  event_activity_data:
