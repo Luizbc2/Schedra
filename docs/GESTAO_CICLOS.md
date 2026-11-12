@@ -138,3 +138,18 @@ O responsavel escolheu deixar o PR pronto para revisao, sem merge.
 [Matriz e roteiro da candidata](FECHAMENTO_RUBRICA.md). Os resultados
 automatizados pertencem aos checks do commit no GitHub; nao sao aprovacao
 humana, release lancada ou fechamento antecipado da Sprint 2.
+
+## Homologacao da apresentacao em 12/11
+
+Depois da revisao inicial, a base foi integrada em `dev` pelo PR #46 e
+publicada pelo PR #47. O PR #48 corrigiu a troca de senha. A API voltou a
+atender apos a recuperacao registrada em SCHED-59. O responsavel confirmou
+login e troca de avatar no iPhone; o Android virtual foi usado para isolar
+formato e reconexao sem modificar a conta de producao.
+
+A [versao candidata](VERSAO_APRESENTACAO.md) concentra os complementos de
+diagramas, agenda e verificacao. Na pratica, a existencia de duas instancias
+Metro fez o iPhone tentar autenticar no backend local. O ensaio agora usa
+porta e API explicitamente separadas, com o destino confirmado antes da
+demonstracao. Nenhuma retrospectiva, data de apresentacao, encerramento de
+sprint ou aceite docente foi presumido.

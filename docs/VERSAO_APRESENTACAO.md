@@ -20,6 +20,6 @@ Registro de 12/11/2026 para [SCHED-44](https://schedra-luiz.atlassian.net/browse
 ## Evidencias e limites
 
 - [CI da base em main](https://github.com/Luizbc2/Schedra/actions/runs/43216448465) e [ensaio isolado de Compose/rollback](https://github.com/Luizbc2/Schedra/actions/runs/43212029836/artifacts/13940564974). Sao verificacoes da base, nao checks desta candidata.
-- [Homologacao no aparelho](HOMOLOGACAO_APRESENTACAO.md): login, agenda e persistencia da foto ao reabrir confirmados no iPhone; demais combinacoes de formato e interrupcao devem ser verificadas separadamente.
+- [Homologacao mobile](HOMOLOGACAO_APRESENTACAO.md): login, agenda e persistencia da foto ao reabrir confirmados no iPhone. JPEG e HEIC, reabertura sem API e envio automatico na reconexao verificados no Pixel 6 virtual.
 - [Matriz e runbook](FECHAMENTO_RUBRICA.md): usar o CI do commit da candidata antes de integrar e manter separado qualquer aceite ou deploy de producao.
 - CRUD de negocio offline completo, conflitos entre dispositivos e restauracao do banco de producao nao foram homologados nesta rodada.
