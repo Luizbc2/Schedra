@@ -23,7 +23,7 @@ Oswald Medium define a hierarquia de títulos e Roboto atende textos, formulári
 
 ## Modelo de dados
 
-O banco possui 33 tabelas de domínio: 7 tabelas operacionais e 26 tabelas de plataforma, além de `schema_migrations` para controle técnico de versão.
+O banco possui 34 tabelas de domínio, além de `schema_migrations` para controle técnico de versão. O DER completo e importável está em [`diagrams/schedra-database.dbml`](diagrams/schedra-database.dbml), com uma [visualização relacional no dbdiagram](https://dbdiagram.io/d/Schedra-DER-completo-6aabd504b73118d200aba4ce).
 
 ### Núcleo existente
 
@@ -45,19 +45,42 @@ O banco possui 33 tabelas de domínio: 7 tabelas operacionais e 26 tabelas de pl
 
 `payment_methods`, `payments`, `invoices`, `coupons`, `notifications`, `audit_logs`, `device_tokens`, `auth_sessions` e `appointment_slots`.
 
-`notifications` e `device_tokens` são reservas de esquema e não representam uma funcionalidade ativa. O aplicativo não depende de `expo-notifications`; lembretes permanecem fora do escopo atual.
+`notifications` e `device_tokens` são reservas de esquema e não representam uma funcionalidade ativa. Elas serão revisadas e migradas quando a proposta de lembretes entrar em implementação; até lá, o aplicativo não deve anunciar notificações como recurso concluído.
 
-## Preparação para Expo
+### Expansão proposta
 
-- A API permanece como fonte única de dados.
+A evolução documentada acrescenta `notification_preferences`, `reminders` e `sync_operations`. As duas primeiras separam preferências, agendamento e tentativas de entrega. A última registra operações web criadas offline com chave idempotente, versão base e estado de sincronização.
+
+## Linha de base técnica
+
+- A API permanece como fonte de verdade para a agenda e os cadastros. O
+  microsserviço de eventos mantém apenas uma projeção operacional independente.
 - Cores e marca já estão isoladas em TypeScript.
 - O contrato de autenticação com access token curto e refresh rotativo é compartilhado por web e mobile.
 - `memberships`, `roles` e `permissions` permitem sessões com escopos adequados no app.
 - `locations` prepara seleção e troca de unidade.
 - Nenhuma regra de negócio foi movida para componentes visuais.
-## Implementação atual
+
+## Arquitetura futura
+
+- A aplicação web receberá manifesto PWA e Service Worker com cache explícito e versionado.
+- Escritas offline permitidas passarão por fila local e endpoint idempotente; operações administrativas continuarão exclusivamente online.
+- Um processador assíncrono selecionará lembretes vencidos e registrará entrega, falha, cancelamento ou nova tentativa.
+- O aplicativo solicitará consentimento de notificação somente no contexto de uso, mantendo a central interna disponível em caso de recusa.
+- O frontend web ganhará rota administrativa protegida, sem transferir regras de autorização para o navegador.
+- O calendário compartilhará o contrato de resumo diário entre web e mobile, usando pop-up no desktop e painel inferior no celular.
+
+## Implementação atual usada como ponto de partida
 
 O backend opera como monólito modular multiempresa. Usuários acessam organizações por meio de vínculos com papéis e permissões; clientes, profissionais, serviços e agendamentos são isolados pela organização ativa da sessão. Contas existentes recebem automaticamente um workspace padrão e seus registros legados são vinculados durante o bootstrap.
+
+Na candidata atual, a API publica eventos de clientes após confirmar a escrita.
+O [microsserviço de eventos](../Microservico-Eventos/README.md) assina o Redis
+Pub/Sub em processo separado e guarda recibos e contagens em SQLite próprio,
+distinto do banco central e do SQLite do aparelho. Ele não envia notificações,
+não oferece replay e não é necessário para gravar um cliente. Ver
+[C4 e decisões arquiteturais](architecture/README.md) e
+[evidência da validação](VALIDACAO_OPERACIONAL.md).
 
 Os agendamentos persistem início, fim, duração, preço e snapshots de cliente, profissional e serviço no momento da reserva. Slots transacionais de cinco minutos impedem sobreposição inclusive sob concorrência, enquanto `version` evita sobrescrita silenciosa. Regras semanais, intervalos, serviços habilitados e bloqueios de agenda são validados antes da transação. Mudanças de status e operações administrativas sensíveis geram histórico e auditoria.
 

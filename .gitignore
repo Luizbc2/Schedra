@@ -2,5 +2,7 @@
 node_modules
 playwright-report
 test-results
+tmp/
+artifacts/
 infra/nginx/certs/*
 !infra/nginx/certs/.gitkeep

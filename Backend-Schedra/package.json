@@ -9,7 +9,9 @@
     "start": "node dist/server.js",
     "test": "jest --runInBand",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx src/database/migrate.ts"
+    "db:migrate": "tsx src/database/migrate.ts",
+    "docs:openapi": "tsx scripts/export-openapi.ts",
+    "docs:openapi:check": "tsx scripts/export-openapi.ts --check"
   },
   "keywords": [
     "node",
@@ -30,6 +32,7 @@
     "mysql2": "^3.22.5",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
+    "redis": "^6.3.0",
     "sequelize": "^6.37.8",
     "sharp": "^0.35.4"
   },

@@ -1,0 +1,515 @@
+Project Schedra {
+  database_type: 'PostgreSQL'
+  Note: 'DER completo do schema atual do Schedra. Gerado a partir dos models Sequelize e migrations em 17/09/2026.'
+}
+
+Enum account_type {
+  business
+  personal
+}
+
+Enum user_role {
+  admin
+  user
+}
+
+Table users {
+  id integer [pk, increment]
+  name varchar [not null]
+  email varchar [not null, unique]
+  cpf varchar(11) [not null, unique]
+  password varchar [not null]
+  accountType account_type [not null, default: 'business']
+  role user_role [not null, default: 'user']
+  active boolean [not null, default: true]
+  avatarUrl varchar
+  deletedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table avatar_assets {
+  filename varchar(120) [pk]
+  userId integer [not null, ref: > users.id]
+  content bytea [not null]
+  createdAt timestamp [not null]
+}
+
+Table organizations {
+  id integer [pk, increment]
+  ownerUserId integer [not null, ref: > users.id]
+  name varchar [not null]
+  slug varchar [not null, unique]
+  status varchar [not null, default: 'active']
+  timezone varchar(64) [not null, default: 'America/Sao_Paulo']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table locations {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  name varchar [not null]
+  timezone varchar [not null, default: 'America/Sao_Paulo']
+  phone varchar
+  addressLine varchar
+  city varchar
+  state varchar(2)
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table roles {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  name varchar [not null]
+  description varchar
+  isSystem boolean [not null, default: false]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (organizationId, name) [unique]
+  }
+}
+
+Table permissions {
+  id integer [pk, increment]
+  code varchar [not null, unique]
+  description varchar [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table role_permissions {
+  id integer [pk, increment]
+  roleId integer [not null, ref: > roles.id]
+  permissionId integer [not null, ref: > permissions.id]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (roleId, permissionId) [unique]
+  }
+}
+
+Table memberships {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  userId integer [not null, ref: > users.id]
+  roleId integer [not null, ref: > roles.id]
+  locationId integer [ref: >? locations.id]
+  status varchar [not null, default: 'active']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (organizationId, userId) [unique]
+  }
+}
+
+Table auth_sessions {
+  id integer [pk, increment]
+  userId integer [not null, ref: > users.id]
+  organizationId integer [ref: >? organizations.id]
+  refreshTokenHash varchar(64) [not null, unique]
+  expiresAt timestamp [not null]
+  revokedAt timestamp
+  lastUsedAt timestamp [not null]
+  userAgent varchar(512)
+  ipAddress varchar(64)
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (userId, revokedAt)
+  }
+}
+
+Table audit_logs {
+  id integer [pk, increment]
+  organizationId integer [ref: >? organizations.id]
+  userId integer [ref: >? users.id]
+  action varchar [not null]
+  entityType varchar [not null]
+  entityId varchar
+  metadata json
+  ipAddress varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table clients {
+  id integer [pk, increment]
+  userId integer [ref: >? users.id]
+  organizationId integer [ref: >? organizations.id]
+  name varchar [not null]
+  email varchar [not null]
+  phone varchar [not null]
+  cpf varchar [not null, default: '']
+  notes text [not null, default: '']
+  deletedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table client_addresses {
+  id integer [pk, increment]
+  clientId integer [not null, ref: > clients.id]
+  label varchar [not null, default: 'principal']
+  postalCode varchar(9)
+  street varchar [not null]
+  number varchar
+  complement varchar
+  city varchar [not null]
+  state varchar(2) [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table client_preferences {
+  id integer [pk, increment]
+  clientId integer [not null, ref: > clients.id]
+  contactChannel varchar [not null, default: 'whatsapp']
+  acceptsMarketing boolean [not null, default: false]
+  reminderHours integer [not null, default: 24]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table waitlist_entries {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  clientId integer [not null, ref: > clients.id]
+  serviceId integer [ref: >? services.id]
+  professionalId integer [ref: >? professionals.id]
+  preferredDate date [not null]
+  period varchar
+  status varchar [not null, default: 'waiting']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table services {
+  id integer [pk, increment]
+  userId integer [ref: >? users.id]
+  organizationId integer [ref: >? organizations.id]
+  name varchar [not null]
+  category varchar [not null]
+  durationMinutes integer [not null]
+  price decimal(10,2) [not null]
+  description text [not null, default: '']
+  deletedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table service_categories {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  name varchar [not null]
+  color varchar(7)
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (organizationId, name) [unique]
+  }
+}
+
+Table professionals {
+  id integer [pk, increment]
+  userId integer [ref: >? users.id]
+  organizationId integer [ref: >? organizations.id]
+  membershipId integer [ref: >? memberships.id]
+  name varchar [not null]
+  email varchar [not null]
+  phone varchar [not null]
+  specialty varchar [not null]
+  status varchar [not null, default: 'ativo']
+  deletedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table professional_work_days {
+  id integer [pk, increment]
+  professionalId integer [not null, ref: > professionals.id]
+  dayOfWeek varchar [not null]
+  enabled boolean [not null, default: false]
+  startTime varchar [not null, default: '09:00']
+  endTime varchar [not null, default: '18:00']
+  breakStart varchar
+  breakEnd varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (professionalId, dayOfWeek) [unique]
+  }
+}
+
+Table professional_services {
+  id integer [pk, increment]
+  professionalId integer [not null, ref: > professionals.id]
+  serviceId integer [not null, ref: > services.id]
+  customDurationMinutes integer
+  customPrice decimal(10,2)
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (professionalId, serviceId) [unique]
+  }
+}
+
+Table professional_time_off {
+  id integer [pk, increment]
+  professionalId integer [not null, ref: > professionals.id]
+  startsAt timestamp [not null]
+  endsAt timestamp [not null]
+  reason varchar
+  allDay boolean [not null, default: false]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table rooms {
+  id integer [pk, increment]
+  locationId integer [not null, ref: > locations.id]
+  name varchar [not null]
+  capacity integer [not null, default: 1]
+  active boolean [not null, default: true]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table resources {
+  id integer [pk, increment]
+  locationId integer [not null, ref: > locations.id]
+  name varchar [not null]
+  quantity integer [not null, default: 1]
+  active boolean [not null, default: true]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table appointments {
+  id integer [pk, increment]
+  userId integer [ref: >? users.id]
+  organizationId integer [ref: >? organizations.id]
+  clientId integer [not null, ref: > clients.id]
+  professionalId integer [not null, ref: > professionals.id]
+  serviceId integer [not null, ref: > services.id]
+  scheduledAt timestamp [not null]
+  endsAt timestamp
+  durationMinutes integer
+  clientNameSnapshot varchar
+  professionalNameSnapshot varchar
+  serviceNameSnapshot varchar
+  priceSnapshot decimal(10,2)
+  version integer [not null, default: 0]
+  status varchar [not null, default: 'pendente']
+  notes text [not null, default: '']
+  deletedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table personal_events {
+  id integer [pk, increment]
+  userId integer [not null, ref: > users.id]
+  title varchar(120) [not null]
+  startsAt timestamp [not null]
+  endsAt timestamp [not null]
+  location varchar(160) [not null, default: '']
+  notes text [not null, default: '']
+  reminderMinutes integer [not null, default: 30]
+  completed boolean [not null, default: false]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table appointment_slots {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  appointmentId integer [not null, ref: > appointments.id]
+  professionalId integer [not null, ref: > professionals.id]
+  slotStart timestamp [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (organizationId, professionalId, slotStart) [unique]
+    appointmentId
+  }
+}
+
+Table appointment_resources {
+  id integer [pk, increment]
+  appointmentId integer [not null, ref: > appointments.id]
+  resourceId integer [not null, ref: > resources.id]
+  quantity integer [not null, default: 1]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (appointmentId, resourceId) [unique]
+  }
+}
+
+Table appointment_status_history {
+  id integer [pk, increment]
+  appointmentId integer [not null, ref: > appointments.id]
+  changedByUserId integer [ref: >? users.id]
+  fromStatus varchar
+  toStatus varchar [not null]
+  reason varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table appointment_notes {
+  id integer [pk, increment]
+  appointmentId integer [not null, ref: > appointments.id]
+  authorUserId integer [ref: >? users.id]
+  content text [not null]
+  visibility varchar [not null, default: 'internal']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table payment_methods {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  name varchar [not null]
+  type varchar [not null]
+  active boolean [not null, default: true]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table payments {
+  id integer [pk, increment]
+  appointmentId integer [not null, ref: > appointments.id]
+  paymentMethodId integer [ref: >? payment_methods.id]
+  amount decimal(10,2) [not null]
+  status varchar [not null, default: 'pending']
+  paidAt timestamp
+  externalReference varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table invoices {
+  id integer [pk, increment]
+  paymentId integer [not null, ref: > payments.id]
+  number varchar [not null, unique]
+  status varchar [not null, default: 'issued']
+  issuedAt timestamp [not null]
+  url text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table coupons {
+  id integer [pk, increment]
+  organizationId integer [not null, ref: > organizations.id]
+  code varchar [not null]
+  discountType varchar [not null]
+  discountValue decimal(10,2) [not null]
+  startsAt timestamp
+  endsAt timestamp
+  active boolean [not null, default: true]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (organizationId, code) [unique]
+  }
+}
+
+Table notifications {
+  id integer [pk, increment]
+  userId integer [not null, ref: > users.id]
+  channel varchar [not null]
+  type varchar [not null]
+  title varchar [not null]
+  content text [not null]
+  status varchar [not null, default: 'pending']
+  sentAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table device_tokens {
+  id integer [pk, increment]
+  userId integer [not null, ref: > users.id]
+  platform varchar [not null]
+  token varchar(512) [not null, unique]
+  lastSeenAt timestamp [not null]
+  active boolean [not null, default: true]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table schema_migrations {
+  id varchar(100) [pk]
+  executedAt timestamp [not null]
+}
+
+TableGroup "Identidade e acesso" {
+  users
+  avatar_assets
+  organizations
+  locations
+  roles
+  permissions
+  role_permissions
+  memberships
+  auth_sessions
+  audit_logs
+}
+
+TableGroup "Clientes" {
+  clients
+  client_addresses
+  client_preferences
+  waitlist_entries
+}
+
+TableGroup "Catálogo e capacidade" {
+  services
+  service_categories
+  professionals
+  professional_work_days
+  professional_services
+  professional_time_off
+  rooms
+  resources
+}
+
+TableGroup "Agenda" {
+  appointments
+  personal_events
+  appointment_slots
+  appointment_resources
+  appointment_status_history
+  appointment_notes
+}
+
+TableGroup "Financeiro" {
+  payment_methods
+  payments
+  invoices
+  coupons
+}
+
+TableGroup "Comunicação" {
+  notifications
+  device_tokens
+}
+
+TableGroup "Controle técnico" {
+  schema_migrations
+}

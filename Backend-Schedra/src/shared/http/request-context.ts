@@ -15,7 +15,8 @@ const storage = new AsyncLocalStorage<RequestContext>();
 
 export const requestContextMiddleware: RequestHandler = (request, response, next) => {
   const suppliedRequestId = request.header("x-request-id")?.trim();
-  const requestId = suppliedRequestId && suppliedRequestId.length <= 128 ? suppliedRequestId : randomUUID();
+  const requestId = suppliedRequestId && /^[a-zA-Z0-9._:-]{1,128}$/.test(suppliedRequestId)
+    ? suppliedRequestId : randomUUID();
   response.setHeader("x-request-id", requestId);
   storage.run({ requestId }, next);
 };

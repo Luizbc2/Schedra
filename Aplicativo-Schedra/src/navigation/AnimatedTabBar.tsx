@@ -11,17 +11,17 @@ import type { MainTabParamList } from "./types";
 const tabIcons: Record<keyof MainTabParamList, keyof typeof Ionicons.glyphMap> = {
   Agenda: "time-outline",
   Clientes: "people-outline",
+  Profissionais: "briefcase-outline",
   Servicos: "cut-outline",
-  Admin: "shield-checkmark-outline",
-  Perfil: "person-outline",
+  Mais: "ellipsis-horizontal-circle-outline",
 };
 
 const tabLabels: Record<keyof MainTabParamList, string> = {
   Agenda: "Agenda",
   Clientes: "Clientes",
+  Profissionais: "Profissionais",
   Servicos: "Serviços",
-  Admin: "Admin",
-  Perfil: "Perfil",
+  Mais: "Mais",
 };
 
 export function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -171,6 +171,6 @@ const styles = StyleSheet.create({
   indicator: { position: "absolute", left: 3, top: 3, bottom: 3, borderWidth: 1, borderRadius: 6 },
   tab: { flex: 1, minWidth: 0, alignItems: "center", justifyContent: "center", zIndex: 1 },
   tabContent: { alignItems: "center", justifyContent: "center", gap: 3 },
-  label: { maxWidth: "100%", fontFamily: fonts.bodyMedium, fontSize: 10 },
+  label: { maxWidth: "100%", fontFamily: fonts.bodyMedium, fontSize: 9 },
   pressed: { opacity: 0.68 },
 });

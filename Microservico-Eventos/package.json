@@ -1,0 +1,22 @@
+{
+  "name": "schedra-event-activity",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.12.0 <25" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "start": "node dist/main.js",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "dependencies": { "redis": "^6.3.0" },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^24.7.2",
+    "eslint": "^9.39.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:schedra:client-event:v1",
+  "title": "Schedra client event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "version", "type", "scope", "entityId", "occurredAt", "requestId"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "version": { "const": 1 },
+    "type": { "enum": ["client.created", "client.updated", "client.deleted"] },
+    "scope": { "type": "string", "pattern": "^(org|user):[1-9][0-9]*$" },
+    "entityId": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "occurredAt": { "type": "string", "format": "date-time", "description": "UTC canonico com milissegundos, produzido por Date.toISOString()." },
+    "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]{1,128}$" }
+  }
+}
