@@ -1,16 +1,15 @@
-import { useId, useState, type Ref } from "react";
-import { StyleSheet, Text, TextInput, View, type TextInputProps, type StyleProp, type ViewStyle } from "react-native";
+import { useId, useState, type ComponentPropsWithRef } from "react";
+import { StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { fonts } from "../../../theme/tokens";
 import { IconButton } from "./IconButton";
 
-export type FormFieldProps = TextInputProps & {
+export type FormFieldProps = ComponentPropsWithRef<typeof TextInput> & {
   label: string;
   error?: string;
   helperText?: string;
   containerStyle?: StyleProp<ViewStyle>;
-  ref?: Ref<TextInput>;
 };
 
 export function FormField({ label, error, helperText, containerStyle, style, editable = true, secureTextEntry, onFocus, onBlur, accessibilityLabel, ...props }: FormFieldProps) {

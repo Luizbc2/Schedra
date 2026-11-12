@@ -121,7 +121,6 @@ export class UsersController {
       name: asString(body.name),
       email: asString(body.email),
       cpf: asString(body.cpf),
-      currentPassword: asString(body.currentPassword),
       password: asString(body.password),
     };
   }
@@ -135,6 +134,7 @@ export class UsersController {
       name: asString(body.name),
       email: asString(body.email),
       cpf: asString(body.cpf),
+      currentPassword: asString(body.currentPassword),
       password: asString(body.password),
     };
   }
