@@ -2,8 +2,9 @@
 
 Candidata de 12/11/2026: [PR #46 para dev](https://github.com/Luizbc2/Schedra/pull/46).
 Reune os commits de #41 a #45 na mesma ancestralidade. Nao reaplicar os cinco
-PRs por cherry-pick ou squash. Por decisao do responsavel, esta entrega fica
-**para revisao, sem merge**. Main e producao nao fazem parte do escopo.
+PRs por cherry-pick ou squash. A candidata foi preparada para revisao; a
+promocao autorizada depois continua condicionada aos gates de dev e ao
+ambiente real. Conferir o estado do PR e os deploys antes de declarar release.
 
 ## Matriz de demonstracao
 
@@ -90,6 +91,8 @@ producao. [Roteiro operacional](VALIDACAO_OPERACIONAL.md).
   negado acrescidos ao ensaio; pipeline de validacao explicito.
 - Diagramas atuais separados da proposta, com margem de 8 px entre texto e
   conectores e paginas com tamanho uniforme.
-- **Pendente:** revisao/decisao de integracao, CI do commit de dev apos merge e
-  aceite do responsavel/professor. Versao candidata nao e release de producao
-  nem garantia de nota. Nao declarar concluidas as sprints futuras.
+- **Gates de liberacao:** revisao, CI do commit de dev apos merge e verificacao
+  do ambiente real antes da promocao. Vercel publica web e API, nao o
+  consumidor continuo. Para liberar tambem os eventos, confirmar Redis e
+  runtime do microsservico com volume persistente. Versao candidata nao e
+  release de producao nem garantia de nota. Aceite docente permanece separado.

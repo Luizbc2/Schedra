@@ -1,7 +1,8 @@
 # Validacao operacional da rubrica
 
-Incremento de 06/11, ampliado em 09/11/2026 no
-[PR #45](https://github.com/Luizbc2/Schedra/pull/45), dependente de #44.
+Incrementos de 06/11 e 09/11/2026, consolidados em 12/11 no
+[PR #46](https://github.com/Luizbc2/Schedra/pull/46).
+O [fechamento da rubrica](FECHAMENTO_RUBRICA.md) e a referencia da candidata.
 Este roteiro executa dados sinteticos em containers locais/runner, nao em Vercel,
 nem no banco de um usuario. O checkout original e suas alteracoes foram preservados.
 
@@ -103,4 +104,16 @@ Na mesma execucao: 80 leituras/5 concorrentes, p95 **50,51 ms**; 20 escritas/2
 concorrentes, p95 **20,50 ms**, zero erros. Ambiente sintetico Linux/Compose,
 nao producao nem medicao prolongada. O primeiro ensaio 42616507680 falhou no
 socket apos reload do Nginx; a correcao manteve todos os gates. Atualizacoes
-posteriores de documentacao geram novo CI: conferir tambem o HEAD do PR #45.
+posteriores de documentacao geram novo CI.
+
+## Evidencia da candidata de 12/11
+
+O [CI 43212029836](https://github.com/Luizbc2/Schedra/actions/runs/43212029836)
+validou o HEAD `f5f399f` do PR #46 no merge candidato `1a7ebc4`. O
+[artefato 13940564974](https://github.com/Luizbc2/Schedra/actions/runs/43212029836/artifacts/13940564974)
+confirmou seis jobs aprovados, `passed: true`, jornada de profissionais,
+negativa de acesso administrativo, dez checks do microsservico e rollback
+preservando cliente e avatar. Carga sintetica sem erros: p95 de 40,17 ms
+para 80 leituras e 17,99 ms para 20 escritas. Conferir os checks do
+[HEAD vigente](https://github.com/Luizbc2/Schedra/pull/46/checks) a cada
+atualizacao. Este ensaio nao comprova implantacao em producao.

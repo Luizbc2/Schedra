@@ -1,6 +1,6 @@
 # Gestão da nova entrega no Jira
 
-Atualizado em 09/11/2026. Site criado e conexão autorizada pelo proprietário. Esta página registra configuração e planejamento; não atesta aceite das funcionalidades.
+Atualizado em 12/11/2026. Site criado e conexão autorizada pelo proprietário. Esta página registra configuração, planejamento e execução; não atesta aceite das funcionalidades.
 
 ## Acesso
 
@@ -38,9 +38,11 @@ inicio 22/10 e termino previsto 05/11. Tinha SCHED-1 em analise e SCHED-2 em
 andamento, **0/2 concluidos**. Ambos foram transportados, sem declarar entrega
 ou cerimonia ocorrida. O registro de fechamento esta em SCHED-2/SCHED-54.
 
-[SCHED-57](https://schedra-luiz.atlassian.net/browse/SCHED-57) foi criada para
-revisar/integrar #41/#42/#43/#44/#45 em dev e identificar o SHA aprovado para
-homologacao. Ela bloqueia as verificacoes integradas da segunda sprint.
+[SCHED-57](https://schedra-luiz.atlassian.net/browse/SCHED-57) acompanha
+o [PR #46](https://github.com/Luizbc2/Schedra/pull/46), que inclui #41 a #45
+sem reaplicar commits. O candidato passou no CI isolado e foi colocado em
+analise em 12/11. Os resultados e a decisao de promocao ficam no ticket e
+no PR. A integracao em dev e sua validacao sao o gate da segunda sprint.
 SCHED-47/48/52 bloqueiam a entrega continua em SCHED-49; revisao de arquitetura,
 DDD, deploy e avatar bloqueiam a liberacao final em SCHED-44.
 
