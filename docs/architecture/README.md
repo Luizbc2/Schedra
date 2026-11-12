@@ -7,6 +7,8 @@ Os modelos antigos de evolucao continuam sendo propostas. Referencias:
 [qualidade](QUALITY.md), [Redis](../REDIS_OPERACAO.md),
 [microsservico](../../Microservico-Eventos/README.md).
 
+[Fluxos atuais e implantacao para demonstracao](FLOWS.md): casos de uso, atividades e sequencias da agenda, do catalogo e do avatar.
+
 As [pranchas atuais em Excalidraw](../diagrams/Schedra-arquitetura-atual.excalidraw)
 estao separadas da proposta de evolucao. Previews:
 [Contexto](../diagrams/atual-01.png),

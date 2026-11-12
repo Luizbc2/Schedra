@@ -1,6 +1,6 @@
 Project Schedra {
   database_type: 'PostgreSQL'
-  Note: 'DER completo do schema atual do Schedra. Gerado a partir dos models Sequelize e migrations em 17/09/2026.'
+  Note: 'DER do schema central do Schedra. Conferido com PostgreSQL de validacao em 12/11/2026.'
 }
 
 Enum account_type {
@@ -146,7 +146,7 @@ Table clients {
   name varchar [not null]
   email varchar [not null]
   phone varchar [not null]
-  cpf varchar [not null, default: '']
+  cpf varchar [default: '']
   notes text [not null, default: '']
   deletedAt timestamp
   createdAt timestamp [not null]

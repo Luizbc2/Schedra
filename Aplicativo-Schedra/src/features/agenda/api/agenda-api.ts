@@ -7,8 +7,8 @@ import { servicesApi } from "../../catalog/api/services-api";
 export type Appointment = { id: number; clientId: number; clientName: string; professionalId: number; professionalName: string; serviceId: number; serviceName: string; scheduledAt: string; endsAt: string; durationMinutes: number; priceSnapshot: number; version: number; status: "confirmado" | "pendente" | "cancelado"; notes: string };
 type AppointmentInput = Pick<Appointment, "clientId" | "professionalId" | "serviceId" | "scheduledAt" | "status" | "notes"> & { version?: number };
 export type PersonalEvent = { id: number; title: string; startsAt: string; endsAt: string; location: string; notes: string; reminderMinutes: number; completed: boolean };
-export type EntityOption = { id: number; name: string };
-type Page<T> = { data: T[] };
+export type AgendaOptionGroup = "clients" | "professionals" | "services";
+export type EntityOption = { id: number; name: string; detail?: string };
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
 export const agendaApi = {
@@ -37,8 +37,16 @@ export const agendaApi = {
     await cacheRemovedRecord("personal_events", token, id).catch(() => console.warn("Nao foi possivel remover o compromisso local."));
     return result;
   },
-  listOptions: async (token: string) => {
-    const [clients, professionals, services] = await Promise.all([clientsApi.list(token), professionalsApi.list(token), servicesApi.list(token)]);
-    return { clients: clients.data, professionals: professionals.data, services: services.data };
+  searchOptions: async (token: string, group: AgendaOptionGroup, search: string, page: number, signal?: AbortSignal) => {
+    if (group === "clients") {
+      const result = await clientsApi.searchPage(token, search, page, signal);
+      return { ...result, data: result.data.map(({ id, name, email, phone }) => ({ id, name, detail: phone || email })) };
+    }
+    if (group === "professionals") {
+      const result = await professionalsApi.searchPage(token, search, page, signal);
+      return { ...result, data: result.data.map(({ id, name, specialty, status }) => ({ id, name, detail: status === "ferias" ? `${specialty} \u00b7 F\u00e9rias` : specialty })) };
+    }
+    const result = await servicesApi.searchPage(token, search, page, signal);
+    return { ...result, data: result.data.map(({ id, name, category, durationMinutes }) => ({ id, name, detail: `${category} \u00b7 ${durationMinutes} min` })) };
   },
 };
