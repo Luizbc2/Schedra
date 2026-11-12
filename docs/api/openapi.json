@@ -277,6 +277,402 @@
           }
         }
       },
+      "Message": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ProfessionalInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "specialty",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "phone": {
+            "type": "string",
+            "description": "Telefone valido, normalizado pela API."
+          },
+          "specialty": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ativo",
+              "ferias"
+            ]
+          }
+        }
+      },
+      "Professional": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProfessionalInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        ]
+      },
+      "ProfessionalPage": {
+        "type": "object",
+        "required": [
+          "data",
+          "page",
+          "limit",
+          "totalItems",
+          "totalPages"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Professional"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "ProfessionalDetail": {
+        "type": "object",
+        "required": [
+          "professional"
+        ],
+        "properties": {
+          "professional": {
+            "$ref": "#/components/schemas/Professional"
+          }
+        }
+      },
+      "ProfessionalResult": {
+        "type": "object",
+        "required": [
+          "message",
+          "professional"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "professional": {
+            "$ref": "#/components/schemas/Professional"
+          }
+        }
+      },
+      "ProfessionalWorkDayInput": {
+        "type": "object",
+        "required": [
+          "dayOfWeek",
+          "enabled",
+          "startTime",
+          "endTime"
+        ],
+        "properties": {
+          "dayOfWeek": {
+            "type": "string",
+            "enum": [
+              "domingo",
+              "segunda",
+              "terca",
+              "quarta",
+              "quinta",
+              "sexta",
+              "sabado"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "breakStart": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "breakEnd": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          }
+        }
+      },
+      "ProfessionalWorkDay": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProfessionalWorkDayInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "professionalId",
+              "breakStart",
+              "breakEnd"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "professionalId": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "breakStart": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
+              "breakEnd": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              }
+            }
+          }
+        ]
+      },
+      "ProfessionalWorkDaysInput": {
+        "type": "object",
+        "required": [
+          "workDays"
+        ],
+        "properties": {
+          "workDays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalWorkDayInput"
+            }
+          }
+        }
+      },
+      "ProfessionalWorkDays": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalWorkDay"
+            }
+          }
+        }
+      },
+      "ProfessionalWorkDaysResult": {
+        "type": "object",
+        "required": [
+          "message",
+          "workDays"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "workDays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalWorkDay"
+            }
+          }
+        }
+      },
+      "AdminUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "cpf",
+          "accountType",
+          "role",
+          "active",
+          "avatarUrl",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "cpf": {
+            "type": "string",
+            "description": "Dado pessoal disponivel somente na operacao administrativa autorizada."
+          },
+          "accountType": {
+            "type": "string",
+            "enum": [
+              "business",
+              "personal"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminUserPage": {
+        "type": "object",
+        "required": [
+          "data",
+          "page",
+          "limit",
+          "totalItems",
+          "totalPages"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUser"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "AdminUserRoleInput": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ]
+          }
+        }
+      },
+      "AdminUserStatusInput": {
+        "type": "object",
+        "required": [
+          "active"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminUserResult": {
+        "type": "object",
+        "required": [
+          "message",
+          "user"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AdminUser"
+          }
+        }
+      },
       "AppointmentMutation": {
         "type": "object",
         "required": [
@@ -960,15 +1356,936 @@
     },
     "/api/professionals": {
       "get": {
-        "summary": "Lista profissionais da organização ativa",
+        "summary": "Lista profissionais do escopo ativo",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "description": "Exige professionals:read. Filtra por busca e respeita o escopo da sessao.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 6
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Lista paginada"
+            "description": "Pagina de profissionais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Cadastra profissional",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige professionals:write.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfessionalInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Profissional cadastrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/professionals/{id}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "summary": "Consulta profissional",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige professionals:read.",
+        "responses": {
+          "200": {
+            "description": "Profissional encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profissional nao encontrado no escopo autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Atualiza profissional",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige professionals:write.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfessionalInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profissional atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profissional nao encontrado no escopo autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove profissional",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige professionals:write.",
+        "responses": {
+          "200": {
+            "description": "Remocao confirmada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profissional nao encontrado no escopo autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/professionals/{id}/work-days": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "summary": "Consulta jornada semanal",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige professionals:read.",
+        "responses": {
+          "200": {
+            "description": "Horarios cadastrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalWorkDays"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profissional nao encontrado no escopo autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Substitui a jornada semanal",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige professionals:write. Dias nao podem se repetir. Horario final posterior ao inicial; intervalo opcional deve estar dentro da jornada e ter inicio e fim. Uma lista vazia remove a jornada cadastrada.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfessionalWorkDaysInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Jornada atualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalWorkDaysResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissao no tenant ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profissional nao encontrado no escopo autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "summary": "Lista contas da plataforma",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Restrito ao papel global admin, fora do escopo de uma unica organizacao.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pagina de contas sem credenciais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Exige papel global admin; papel da organizacao nao concede acesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/role": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "patch": {
+        "summary": "Altera o papel global de uma conta",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige admin. Bloqueia alteracao da propria conta, revoga sessoes do alvo e audita a operacao.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserRoleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Papel atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Exige papel global admin; papel da organizacao nao concede acesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operacao bloqueada pela protecao do ultimo administrador ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/status": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "patch": {
+        "summary": "Ativa ou desativa uma conta",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige admin. Bloqueia alteracao da propria conta. Desativar revoga sessoes do alvo.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserStatusInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Exige papel global admin; papel da organizacao nao concede acesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operacao bloqueada pela protecao do ultimo administrador ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "delete": {
+        "summary": "Remove uma conta",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Exige admin. Bloqueia remocao da propria conta e revoga sessoes do alvo.",
+        "responses": {
+          "200": {
+            "description": "Remocao confirmada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada invalida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessao ausente, expirada ou revogada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Exige papel global admin; papel da organizacao nao concede acesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operacao bloqueada pela protecao do ultimo administrador ativo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisicoes excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }

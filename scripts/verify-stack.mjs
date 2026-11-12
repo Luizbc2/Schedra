@@ -4,10 +4,15 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { loadProbe } from './load-probe.mjs';
 import { randomUUID } from 'node:crypto';
 const project = 'schedra-rubric-qa';
+const revision = spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).stdout?.trim();
+assert.match(revision || '', /^[0-9a-f]{40}$/, 'The validation deploy must identify the tested commit');
+const baselineImage = `schedra-rubric-backend:baseline-${revision}`;
+const candidateImage = `schedra-rubric-backend:candidate-${revision}`;
+const composeEnv = { ...process.env, VALIDATION_BACKEND_IMAGE: baselineImage };
 const compose = (args, image) => {
   const result = spawnSync('docker', ['compose', '-p', project, '-f', 'compose.validation.yml', ...args], {
     stdio: 'inherit', windowsHide: true,
-    env: { ...process.env, ...(image ? { VALIDATION_BACKEND_IMAGE: image } : {}) },
+    env: { ...composeEnv, ...(image ? { VALIDATION_BACKEND_IMAGE: image } : {}) },
   });
   assert.equal(result.status, 0, `Compose ${args[0]} failed`);
 };
@@ -29,7 +34,7 @@ const http = async (path, init) => {
 };
 const capture = args => {
   const result = spawnSync('docker', ['compose', '-p', project, '-f', 'compose.validation.yml', ...args],
-    { encoding: 'utf8', windowsHide: true });
+    { encoding: 'utf8', windowsHide: true, env: composeEnv });
   assert.equal(result.status, 0, 'Compose capture failed: ' + args[0]);
   return result.stdout.trim();
 };
@@ -54,14 +59,14 @@ const eventsMetrics = async () => {
   assert.equal(response.status, 200);
   return response.text();
 };
-compose(['config', '--quiet']);
-compose(['build', '--build-arg', 'SCHEDRA_RELEASE=qa-baseline', 'backend']);
-compose(['up', '--build', '-d', '--wait', '--wait-timeout', '180']);
-compose(['exec', '-T', 'nginx', 'nginx', '-t']);
-compose(['exec', '-T', 'prometheus', 'promtool', 'check', 'config', '/etc/prometheus/prometheus.yml']);
-const evidence = { environment: 'isolated-compose', recordedAt: new Date().toISOString(), checks: {} };
+const evidence = { environment: 'isolated-compose', revision, recordedAt: new Date().toISOString(), checks: {} };
 mkdirSync('artifacts', { recursive: true });
 try {
+  compose(['config', '--quiet']);
+  compose(['build', '--build-arg', 'SCHEDRA_RELEASE=qa-baseline', 'backend']);
+  compose(['up', '--build', '-d', '--wait', '--wait-timeout', '180']);
+  compose(['exec', '-T', 'nginx', 'nginx', '-t']);
+  compose(['exec', '-T', 'prometheus', 'promtool', 'check', 'config', '/etc/prometheus/prometheus.yml']);
   assert.equal((await http('/health')).response.status, 200);
   assert.equal((await http('/ready')).response.status, 200);
   assert.equal((await http('/metrics')).response.status, 401);
@@ -80,6 +85,30 @@ try {
   assert.equal(login.response.status, 200);
   const headers = { Authorization: `Bearer ${login.body.token}`, 'Content-Type': 'application/json' };
   assert.equal((await http('/ops/events/activity', { headers })).response.status, 401);
+  const forbidden = await http('/api/admin/users', { headers });
+  assert.equal(forbidden.response.status, 403);
+  assert.equal(forbidden.body.code, 'FORBIDDEN');
+  assert.ok(forbidden.body.requestId);
+  const professional = await http('/api/professionals', { method: 'POST', headers, body: JSON.stringify({
+    name: 'Profissional smoke', email: 'professional@schedra.test', phone: '11999999998',
+    specialty: 'Validacao', status: 'ativo',
+  }) });
+  assert.equal(professional.response.status, 201, JSON.stringify(professional.body));
+  const professionalPath = `/api/professionals/${professional.body.professional.id}`;
+  const workDay = { dayOfWeek: 'segunda', enabled: true, startTime: '09:00', endTime: '18:00', breakStart: '12:00', breakEnd: '13:00' };
+  const invalidHours = await http(professionalPath + '/work-days', { method: 'PUT', headers,
+    body: JSON.stringify({ workDays: [workDay, workDay] }) });
+  assert.equal(invalidHours.response.status, 400);
+  const schedule = await http(professionalPath + '/work-days', { method: 'PUT', headers,
+    body: JSON.stringify({ workDays: [workDay] }) });
+  assert.equal(schedule.response.status, 200, JSON.stringify(schedule.body));
+  assert.equal(schedule.body.workDays[0].dayOfWeek, 'segunda');
+  const persistedSchedule = await http(professionalPath + '/work-days', { headers });
+  assert.equal(persistedSchedule.response.status, 200);
+  assert.deepEqual(persistedSchedule.body.data, schedule.body.workDays);
+  assert.equal((await http(professionalPath, { method: 'DELETE', headers })).response.status, 200);
+  evidence.checks.apiContracts = { adminForbidden: true, professionalCreate: true, invalidHoursRejected: true,
+    professionalHoursPersisted: true, professionalDeleted: true };
   const multipart = async (bytes, filename, type) => {
     const form = new FormData();
     form.append('avatar', new Blob([bytes], { type }), filename);
@@ -212,10 +241,10 @@ try {
   const consumerContainer = capture(['ps', '-q', 'events']);
   // Deploy a configuration-only candidate and restore the prior tagged image.
   // No schema reversal; the same persisted rows and avatar must survive both.
-  compose(['build', '--build-arg', 'SCHEDRA_RELEASE=qa-candidate', 'backend'], 'schedra-rubric-backend:candidate');
+  compose(['build', '--build-arg', 'SCHEDRA_RELEASE=qa-candidate', 'backend'], candidateImage);
   for (const [image, release] of [
-    ['schedra-rubric-backend:candidate', 'qa-candidate'],
-    ['schedra-rubric-backend:baseline', 'qa-baseline'],
+    [candidateImage, 'qa-candidate'],
+    [baselineImage, 'qa-baseline'],
   ]) {
     compose(['up', '-d', '--no-build', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '90', 'backend'], image);
     compose(['exec', '-T', 'nginx', 'nginx', '-s', 'reload']);
@@ -233,7 +262,8 @@ try {
     assert.equal(persisted.status, 200);
     assert.deepEqual(Buffer.from(await persisted.arrayBuffer()), avatarBytes);
   }
-  evidence.checks.rollback = { candidate: 'qa-candidate', restored: 'qa-baseline', clientPreserved: true, avatarPreserved: true };
+  evidence.checks.rollback = { candidate: 'qa-candidate', restored: 'qa-baseline', candidateImage,
+    baselineImage, clientPreserved: true, avatarPreserved: true };
   assert.equal(capture(['ps', '-q', 'events']), consumerContainer, 'API rollback must not replace the microservice');
   assert.equal((await http(`/api/clients/${id}`, { method: 'DELETE', headers })).response.status, 200);
   evidence.passed = true;
@@ -242,6 +272,6 @@ try {
   console.log(JSON.stringify({ passed: true, proxy: true, readiness: true, protectedMetrics: true, redisOptional: true, databaseRestart: true }));
 } finally {
   writeFileSync('artifacts/stack-evidence.json', JSON.stringify(evidence, null, 2) + '\n');
-  compose(['logs', '--no-color', '--tail', '50', 'backend']);
-  compose(['down']); // Preserve the test database volume; never touches the developer stack.
+  try { compose(['logs', '--no-color', '--tail', '50', 'backend']); }
+  finally { compose(['down']); } // Preserve the test database volume; never touches the developer stack.
 }

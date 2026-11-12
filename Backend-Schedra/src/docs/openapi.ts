@@ -1,4 +1,27 @@
-const jsonSchema = (name: string) => ({ "application/json": { schema: { $ref: `#/components/schemas/${name}` } } });
+const schemaRef = (name: string) => ({ $ref: `#/components/schemas/${name}` });
+const jsonSchema = (name: string) => ({ "application/json": { schema: schemaRef(name) } });
+const jsonBody = (name: string) => ({ required: true, content: jsonSchema(name) });
+const jsonResponse = (description: string, schema: string) => ({ description, content: jsonSchema(schema) });
+const bearer = [{ bearerAuth: [] }];
+const integerId = { type: "integer", minimum: 1 };
+const message = { type: "string" };
+const object = (properties: Record<string, unknown>) => ({ type: "object", required: Object.keys(properties), properties });
+const arrayOf = (name: string) => ({ type: "array", items: schemaRef(name) });
+const withId = (name: string) => ({ allOf: [schemaRef(name), object({ id: integerId })] });
+const pageOf = (name: string, limit: object = integerId) => object({
+  data: arrayOf(name), page: integerId, limit, totalItems: { type: "integer", minimum: 0 }, totalPages: integerId,
+});
+const pageQuery = (limit: number, maximum?: number) => [
+  { in: "query", name: "page", schema: { ...integerId, default: 1 } },
+  { in: "query", name: "limit", schema: { ...integerId, default: limit, ...(maximum ? { maximum } : {}) } },
+  { in: "query", name: "search", schema: { type: "string", ...(maximum ? { maxLength: 120 } : {}) } },
+];
+const clockTime = { type: "string", pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" };
+const breakTime = { ...clockTime, type: ["string", "null"] };
+const professionalDayFields = {
+  dayOfWeek: { type: "string", enum: ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"] },
+  enabled: { type: "boolean" }, startTime: clockTime, endTime: clockTime,
+};
 const clientMutation = { required: true, content: jsonSchema("ClientInput") };
 const clientUpdateMutation = { required: true, content: jsonSchema("ClientUpdate") };
 const clientResult = { description: "Cliente confirmado no banco", content: { "application/json": { schema: {
@@ -11,6 +34,15 @@ const errors = {
   "429": { description: "Limite de requisicoes excedido", content: jsonSchema("ApiError") },
 };
 const idParameter = { in: "path", name: "id", required: true, schema: { type: "integer", minimum: 1 } };
+const accessErrors = { "401": errors["401"], "403": errors["403"], "429": errors["429"] };
+const professionalNotFound = jsonResponse("Profissional nao encontrado no escopo autorizado", "ApiError");
+const adminErrors = {
+  ...errors,
+  "403": jsonResponse("Exige papel global admin; papel da organizacao nao concede acesso", "ApiError"),
+  "404": jsonResponse("Usuario nao encontrado", "ApiError"),
+  "409": jsonResponse("Operacao bloqueada pela protecao do ultimo administrador ativo", "ApiError"),
+};
+const adminAccessErrors = { ...accessErrors, "403": adminErrors["403"] };
 export const openApiDocument = {
   openapi: "3.1.0",
   info: {
@@ -85,6 +117,39 @@ export const openApiDocument = {
           totalItems: { type: "integer", minimum: 0 }, totalPages: { type: "integer", minimum: 1 },
         },
       },
+      Message: object({ message }),
+      ProfessionalInput: object({
+        name: { type: "string", minLength: 2, maxLength: 120 },
+        email: { type: "string", format: "email", maxLength: 254 },
+        phone: { type: "string", description: "Telefone valido, normalizado pela API." },
+        specialty: { type: "string", minLength: 2, maxLength: 80 },
+        status: { type: "string", enum: ["ativo", "ferias"] },
+      }),
+      Professional: withId("ProfessionalInput"),
+      ProfessionalPage: pageOf("Professional"),
+      ProfessionalDetail: object({ professional: schemaRef("Professional") }),
+      ProfessionalResult: object({ message, professional: schemaRef("Professional") }),
+      ProfessionalWorkDayInput: {
+        ...object(professionalDayFields),
+        properties: { ...professionalDayFields, breakStart: breakTime, breakEnd: breakTime },
+      },
+      ProfessionalWorkDay: { allOf: [schemaRef("ProfessionalWorkDayInput"),
+        object({ id: integerId, professionalId: integerId, breakStart: breakTime, breakEnd: breakTime })] },
+      ProfessionalWorkDaysInput: object({ workDays: arrayOf("ProfessionalWorkDayInput") }),
+      ProfessionalWorkDays: object({ data: arrayOf("ProfessionalWorkDay") }),
+      ProfessionalWorkDaysResult: object({ message, workDays: arrayOf("ProfessionalWorkDay") }),
+      AdminUser: object({
+        id: integerId, name: { type: "string" }, email: { type: "string", format: "email" },
+        cpf: { type: "string", description: "Dado pessoal disponivel somente na operacao administrativa autorizada." },
+        accountType: { type: "string", enum: ["business", "personal"] },
+        role: { type: "string", enum: ["admin", "user"] },
+        active: { type: "boolean" }, avatarUrl: { type: ["string", "null"] },
+        createdAt: { type: "string", format: "date-time" },
+      }),
+      AdminUserPage: pageOf("AdminUser", { ...integerId, maximum: 100 }),
+      AdminUserRoleInput: object({ role: { type: "string", enum: ["admin", "user"] } }),
+      AdminUserStatusInput: object({ active: { type: "boolean" } }),
+      AdminUserResult: object({ message, user: schemaRef("AdminUser") }),
       AppointmentMutation: {
         type: "object",
         required: ["clientId", "professionalId", "serviceId", "scheduledAt", "status", "notes"],
@@ -140,7 +205,60 @@ export const openApiDocument = {
       put: { summary: "Atualiza cliente e invalida todas as suas paginas de cache", security: [{ bearerAuth: [] }], description: "Contrato atual de update exige email e telefone nao vazios, diferentemente de create.", requestBody: clientUpdateMutation, responses: { "200": clientResult, "404": { description: "Cliente nao encontrado no escopo" }, ...errors } },
       delete: { summary: "Exclui cliente autorizado e invalida o cache", security: [{ bearerAuth: [] }], responses: { "200": { description: "Exclusao confirmada" }, "404": { description: "Cliente nao encontrado no escopo" }, ...errors } },
     },
-    "/api/professionals": { get: { summary: "Lista profissionais da organização ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" } } } },
+    "/api/professionals": {
+      get: { summary: "Lista profissionais do escopo ativo", security: bearer,
+        description: "Exige professionals:read. Filtra por busca e respeita o escopo da sessao.",
+        parameters: pageQuery(6),
+        responses: { "200": jsonResponse("Pagina de profissionais", "ProfessionalPage"), ...accessErrors } },
+      post: { summary: "Cadastra profissional", security: bearer, description: "Exige professionals:write.",
+        requestBody: jsonBody("ProfessionalInput"),
+        responses: { "201": jsonResponse("Profissional cadastrado", "ProfessionalResult"), ...errors } },
+    },
+    "/api/professionals/{id}": {
+      parameters: [idParameter],
+      get: { summary: "Consulta profissional", security: bearer, description: "Exige professionals:read.",
+        responses: { "200": jsonResponse("Profissional encontrado", "ProfessionalDetail"), "404": professionalNotFound, ...errors } },
+      put: { summary: "Atualiza profissional", security: bearer, description: "Exige professionals:write.",
+        requestBody: jsonBody("ProfessionalInput"),
+        responses: { "200": jsonResponse("Profissional atualizado", "ProfessionalResult"), "404": professionalNotFound, ...errors } },
+      delete: { summary: "Remove profissional", security: bearer, description: "Exige professionals:write.",
+        responses: { "200": jsonResponse("Remocao confirmada", "Message"), "404": professionalNotFound, ...errors } },
+    },
+    "/api/professionals/{id}/work-days": {
+      parameters: [idParameter],
+      get: { summary: "Consulta jornada semanal", security: bearer, description: "Exige professionals:read.",
+        responses: { "200": jsonResponse("Horarios cadastrados", "ProfessionalWorkDays"), "404": professionalNotFound, ...errors } },
+      put: { summary: "Substitui a jornada semanal", security: bearer,
+        description: "Exige professionals:write. Dias nao podem se repetir. Horario final posterior ao inicial; intervalo opcional deve estar dentro da jornada e ter inicio e fim. Uma lista vazia remove a jornada cadastrada.",
+        requestBody: jsonBody("ProfessionalWorkDaysInput"),
+        responses: { "200": jsonResponse("Jornada atualizada", "ProfessionalWorkDaysResult"), "404": professionalNotFound, ...errors } },
+    },
+    "/api/admin/users": {
+      get: { summary: "Lista contas da plataforma", security: bearer,
+        description: "Restrito ao papel global admin, fora do escopo de uma unica organizacao.",
+        parameters: pageQuery(50, 100),
+        responses: { "200": jsonResponse("Pagina de contas sem credenciais", "AdminUserPage"), ...adminAccessErrors } },
+    },
+    "/api/admin/users/{id}/role": {
+      parameters: [idParameter],
+      patch: { summary: "Altera o papel global de uma conta", security: bearer,
+        description: "Exige admin. Bloqueia alteracao da propria conta, revoga sessoes do alvo e audita a operacao.",
+        requestBody: jsonBody("AdminUserRoleInput"),
+        responses: { "200": jsonResponse("Papel atualizado", "AdminUserResult"), ...adminErrors } },
+    },
+    "/api/admin/users/{id}/status": {
+      parameters: [idParameter],
+      patch: { summary: "Ativa ou desativa uma conta", security: bearer,
+        description: "Exige admin. Bloqueia alteracao da propria conta. Desativar revoga sessoes do alvo.",
+        requestBody: jsonBody("AdminUserStatusInput"),
+        responses: { "200": jsonResponse("Status atualizado", "AdminUserResult"), ...adminErrors } },
+    },
+    "/api/admin/users/{id}": {
+      parameters: [idParameter],
+      delete: { summary: "Remove uma conta", security: bearer,
+        description: "Exige admin. Bloqueia remocao da propria conta e revoga sessoes do alvo.",
+        responses: { "200": jsonResponse("Remocao confirmada", "Message"), ...adminErrors } },
+    },
     "/api/services": {
       get: { summary: "Lista servicos da organizacao ativa", security: [{ bearerAuth: [] }], responses: { "200": { description: "Lista paginada" }, ...errors } },
       post: { summary: "Cria servico no tenant ativo", security: [{ bearerAuth: [] }],

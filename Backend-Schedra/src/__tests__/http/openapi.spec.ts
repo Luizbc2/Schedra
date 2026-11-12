@@ -23,4 +23,27 @@ describe("Contrato OpenAPI", () => {
     expect(openApiDocument.paths["/api/clients/{id}"].delete.security).toEqual([{ bearerAuth: [] }]);
     expect(openApiDocument.paths["/api/users/me/avatar"].patch.requestBody.content["multipart/form-data"].schema.required).toEqual(["avatar"]);
   });
+
+  it("documenta as rotas protegidas de profissionais, jornadas e administracao", () => {
+    const { paths, components } = openApiDocument;
+    expect(Object.keys(paths["/api/professionals/{id}"])).toEqual(["parameters", "get", "put", "delete"]);
+    expect(paths["/api/professionals"].post.responses["201"].content["application/json"].schema.$ref)
+      .toBe("#/components/schemas/ProfessionalResult");
+    expect(paths["/api/professionals/{id}/work-days"].put.requestBody.content["application/json"].schema.$ref)
+      .toBe("#/components/schemas/ProfessionalWorkDaysInput");
+    expect(components.schemas.ProfessionalWorkDayInput.properties.breakStart.type).toEqual(["string", "null"]);
+    const admin = [
+      paths["/api/admin/users"].get,
+      paths["/api/admin/users/{id}/role"].patch,
+      paths["/api/admin/users/{id}/status"].patch,
+      paths["/api/admin/users/{id}"].delete,
+    ];
+    for (const operation of admin) {
+      expect(operation.security).toEqual([{ bearerAuth: [] }]);
+      expect(operation.responses["403"].description).toContain("global admin");
+    }
+    expect(paths["/api/admin/users/{id}/status"].patch.responses["409"]).toBeDefined();
+    expect(components.schemas.AdminUserStatusInput.properties.active).toEqual({ type: "boolean" });
+    expect(components.schemas.AdminUser.properties).not.toHaveProperty("password");
+  });
 });

@@ -104,14 +104,19 @@ jobs:
       - run: npm audit --audit-level=high
 
   containers:
+    # Deploy only to the isolated runner after the build/test gates.
+    needs: [backend, web, mobile, events, tooling]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node scripts/verify-stack.mjs
+      - name: Deploy, smoke test and restore the baseline in isolated Compose
+        run: node scripts/verify-stack.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:
