@@ -1,5 +1,7 @@
 # Fechamento da entrega do Schedra
 
+Para o estado posterior ao merge e ao hotfix, veja [versao candidata de apresentacao](VERSAO_APRESENTACAO.md). As instrucoes abaixo preservam a validacao tecnica da base.
+
 Candidata de 12/11/2026: [PR #46 para dev](https://github.com/Luizbc2/Schedra/pull/46).
 Reune os commits de #41 a #45 na mesma ancestralidade. Nao reaplicar os cinco
 PRs por cherry-pick ou squash. A candidata foi preparada para revisao; a

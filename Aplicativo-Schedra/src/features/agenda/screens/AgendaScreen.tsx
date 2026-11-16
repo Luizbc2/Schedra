@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   AppState,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -22,21 +23,22 @@ import { IconButton } from "../../../shared/components/ui/IconButton";
 import { FormField } from "../../../shared/components/ui/FormField";
 import { FeedbackState } from "../../../shared/components/ui/FeedbackState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
-import { fonts, type AppColors } from "../../../theme/tokens";
+import { fonts } from "../../../theme/tokens";
 import { useAuth } from "../../auth/AuthProvider";
 import {
   agendaApi,
+  type AgendaOptionGroup,
   type Appointment,
   type EntityOption,
   type PersonalEvent,
 } from "../api/agenda-api";
-import {
-  PersonalMonthCalendar,
-  toLocalDayKey,
-} from "../components/PersonalMonthCalendar";
+import { PersonalMonthCalendar } from "../components/PersonalMonthCalendar";
+import { AppointmentDayPicker } from "../components/AppointmentDayPicker";
+import { dateFromDayKey, groupAgendaByDay, toLocalDayKey } from "../domain/agenda-days";
 import { ApiError } from "../../../shared/api/client";
 import { agendaStyles } from "./agenda-screen.styles";
 import { AgendaDateTimeField } from "../components/AgendaDateTimeField";
+import { AgendaEntityPicker } from "../components/AgendaEntityPicker";
 import {
   appointmentInput,
   personalEventInput,
@@ -54,6 +56,8 @@ type AgendaItem = {
 };
 
 type PersonalSection = "history" | "upcoming";
+const appointmentGroups = ["clients", "professionals", "services"] as const;
+const emptySelection: Record<AgendaOptionGroup, EntityOption | null> = { clients: null, professionals: null, services: null };
 
 const addHour = (date: Date) => new Date(date.getTime() + 60 * 60 * 1000);
 const formatPersonalDate = (value: string) => {
@@ -96,9 +100,7 @@ function getPersonalStatus(
 }
 
 function formatSelectedDay(dayKey: string) {
-  const [year, month, day] = dayKey.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  const label = date.toLocaleDateString("pt-BR", {
+  const label = dateFromDayKey(dayKey).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
   });
@@ -120,6 +122,7 @@ export function AgendaScreen() {
   const [personalSection, setPersonalSection] =
     useState<PersonalSection>("upcoming");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedAppointmentDay, setSelectedAppointmentDay] = useState<string | null>(null);
   const loadVersion = useRef(0);
 
   const load = useCallback(async () => {
@@ -202,6 +205,7 @@ export function AgendaScreen() {
   }, [personal]);
 
   const personalItems = useMemo(() => {
+    if (!personal) return { history: [], upcoming: [] };
     const nowTime = now.getTime();
     const upcoming = items
       .filter((item) => !isPersonalHistory(item, nowTime))
@@ -211,27 +215,30 @@ export function AgendaScreen() {
       .sort(sortByStartDescending);
 
     return { history, upcoming };
-  }, [items, now]);
+  }, [items, now, personal]);
 
+  const todayKey = toLocalDayKey(now);
+  const appointmentDay = selectedAppointmentDay ?? todayKey;
+  const itemsByDay = useMemo(() => groupAgendaByDay(items), [items]);
   const visibleItems = useMemo(() => {
-    const source = personal ? personalItems[personalSection] : items;
-    if (!personal || !selectedDay) return source;
+    if (!personal) return itemsByDay.get(appointmentDay) ?? [];
+    const source = personalItems[personalSection];
+    if (!selectedDay) return source;
 
     return source.filter(
       (item) => toLocalDayKey(new Date(item.at)) === selectedDay,
     );
-  }, [items, personal, personalItems, personalSection, selectedDay]);
+  }, [appointmentDay, itemsByDay, personal, personalItems, personalSection, selectedDay]);
 
-  const todayKey = toLocalDayKey(now);
-  const todayCount = items.filter(
-    (item) => toLocalDayKey(new Date(item.at)) === todayKey,
-  ).length;
-  const nextCount = personal ? personalItems.upcoming.length : items.length;
+  const todayCount = itemsByDay.get(todayKey)?.length ?? 0;
+  const dateFilter = personal
+    ? selectedDay && formatSelectedDay(selectedDay)
+    : `${appointmentDay === todayKey ? "Hoje · " : ""}${formatSelectedDay(appointmentDay)}`;
   const listTitle = personal
     ? personalSection === "upcoming"
       ? "Próximos horários"
       : "Histórico"
-    : "Próximos horários";
+    : "Atendimentos";
   const emptyMessage = personal
     ? personalSection === "upcoming"
       ? selectedDay
@@ -240,7 +247,7 @@ export function AgendaScreen() {
       : selectedDay
         ? "Nenhum compromisso encerrado nesta data."
         : "Seu histórico ainda está vazio."
-    : "Nenhum compromisso por aqui.";
+    : "A agenda está livre nesta data.";
 
   const openEditor = (item: AgendaItem | null = null) => {
     setEditing(item);
@@ -292,18 +299,20 @@ export function AgendaScreen() {
         </Text>
       </View>
 
-      <View style={styles.metrics}>
-        <Metric
-          label="HOJE"
-          value={String(todayCount).padStart(2, "0")}
-          color={colors.accent}
-        />
-        <Metric
-          label="PRÓXIMOS"
-          value={String(nextCount).padStart(2, "0")}
-          color={colors.amber}
-        />
-      </View>
+      {personal ? (
+        <View style={styles.metrics}>
+          <Metric
+            label="HOJE"
+            value={String(todayCount).padStart(2, "0")}
+            color={colors.accent}
+          />
+          <Metric
+            label="PRÓXIMOS"
+            value={String(personalItems.upcoming.length).padStart(2, "0")}
+            color={colors.amber}
+          />
+        </View>
+      ) : null}
       <LocalDataHint result={localResult} />
 
       {personal ? (
@@ -314,7 +323,15 @@ export function AgendaScreen() {
           onSelectDay={selectCalendarDay}
           selectedDay={selectedDay}
         />
-      ) : null}
+      ) : (
+        <AppointmentDayPicker
+          colors={colors}
+          today={todayKey}
+          selectedDay={appointmentDay}
+          onSelectDay={(day) => setSelectedAppointmentDay(day === todayKey ? null : day)}
+          countForDay={(day) => loading || loadError ? undefined : itemsByDay.get(day)?.length ?? 0}
+        />
+      )}
 
       <View
         style={[
@@ -382,11 +399,11 @@ export function AgendaScreen() {
             <Text style={[styles.listTitle, { color: colors.text }]}>
               {listTitle}
             </Text>
-            {selectedDay ? (
+            {dateFilter ? (
               <Text
                 style={[agendaStyles.dateFilter, { color: colors.textMuted }]}
               >
-                {formatSelectedDay(selectedDay)}
+                {dateFilter}
               </Text>
             ) : null}
           </View>
@@ -402,7 +419,7 @@ export function AgendaScreen() {
           <FeedbackState kind="loading" title="Carregando agenda" />
         ) : visibleItems.length === 0 ? (
           <FeedbackState kind={loadError ? "error" : "empty"}
-            title={loadError ? "Falha ao carregar" : "Nenhum compromisso"}
+            title={loadError ? "Falha ao carregar" : personal ? "Nenhum compromisso" : "Nenhum atendimento"}
             detail={loadError || emptyMessage}
             icon={personalSection === "history" ? "archive-outline" : "calendar-outline"}
             action={loadError ? { label: "Tentar novamente", onPress: load } : undefined} />
@@ -545,22 +562,12 @@ function AgendaEditor({
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
-  const [options, setOptions] = useState<{
-    clients: EntityOption[];
-    professionals: EntityOption[];
-    services: EntityOption[];
-  }>({ clients: [], professionals: [], services: [] });
-  const [selected, setSelected] = useState({
-    clientId: 0,
-    professionalId: 0,
-    serviceId: 0,
-  });
+  const [selected, setSelected] = useState(emptySelection);
+  const [expandedGroup, setExpandedGroup] = useState<AgendaOptionGroup | null>(null);
   const [saving, setSaving] = useState(false);
-  const [optionsError, setOptionsError] = useState("");
 
   useEffect(() => {
-    let active = true;
-    setOptionsError("");
+    setExpandedGroup(null);
     setDate(initialDate);
     if (personal && item) {
       const event = item.raw as PersonalEvent;
@@ -570,37 +577,28 @@ function AgendaEditor({
     } else if (!personal && item) {
       const appointment = item.raw as Appointment;
       setSelected({
-        clientId: appointment.clientId,
-        professionalId: appointment.professionalId,
-        serviceId: appointment.serviceId,
+        clients: { id: appointment.clientId, name: appointment.clientName },
+        professionals: { id: appointment.professionalId, name: appointment.professionalName },
+        services: { id: appointment.serviceId, name: appointment.serviceName },
       });
       setNotes(appointment.notes);
     } else {
       setTitle("");
       setLocation("");
       setNotes("");
-      setSelected({ clientId: 0, professionalId: 0, serviceId: 0 });
+      setSelected(emptySelection);
     }
-    if (visible && !personal)
-      void agendaApi
-        .listOptions(token)
-        .then((value) => {
-          if (active) setOptions(value);
-        })
-        .catch((error: unknown) => {
-          if (active)
-            setOptionsError(
-              error instanceof Error
-                ? error.message
-                : "Não foi possível carregar os cadastros.",
-            );
-        });
-    return () => {
-      active = false;
-    };
-  }, [initialDate, item, personal, token, visible]);
+  }, [initialDate, item, personal]);
 
+  const appointmentIds = {
+    clientId: selected.clients?.id ?? 0,
+    professionalId: selected.professionals?.id ?? 0,
+    serviceId: selected.services?.id ?? 0,
+  };
+  const canSave = personal || Object.values(appointmentIds).every(Boolean);
   const save = async () => {
+    if (!canSave || saving) return;
+    setExpandedGroup(null);
     setSaving(true);
     try {
       if (personal) {
@@ -616,7 +614,7 @@ function AgendaEditor({
         await agendaApi.saveAppointment(
           token,
           appointmentInput(
-            { ...selected, date, notes },
+            { ...appointmentIds, date, notes },
             item?.raw as Appointment | undefined,
           ),
           item?.id,
@@ -691,14 +689,10 @@ function AgendaEditor({
           <IconButton accessibilityLabel="Fechar" icon="close" onPress={onClose} disabled={saving} />
         </View>
         <ScrollView
+          automaticallyAdjustKeyboardInsets
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.form}
         >
-          {optionsError ? (
-            <Text accessibilityRole="alert" style={{ color: colors.danger }}>
-              {optionsError}
-            </Text>
-          ) : null}
           {personal ? (
             <>
               <FormField
@@ -716,41 +710,24 @@ function AgendaEditor({
             </>
           ) : (
             <>
-              {(["clients", "professionals", "services"] as const).map(
-                (group) => (
-                  <AgendaOptionSelector
-                    colors={colors}
-                    key={group}
-                    title={
-                      group === "clients"
-                        ? "Cliente"
-                        : group === "professionals"
-                          ? "Profissional"
-                          : "Serviço"
-                    }
-                    options={options[group]}
-                    value={
-                      selected[
-                        group === "clients"
-                          ? "clientId"
-                          : group === "professionals"
-                            ? "professionalId"
-                            : "serviceId"
-                      ]
-                    }
-                    onChange={(value) =>
-                      setSelected((current) => ({
-                        ...current,
-                        [group === "clients"
-                          ? "clientId"
-                          : group === "professionals"
-                            ? "professionalId"
-                            : "serviceId"]: value,
-                      }))
-                    }
-                  />
-                ),
-              )}
+              {appointmentGroups.map((group) => (
+                <AgendaEntityPicker
+                  key={group}
+                  token={token}
+                  group={group}
+                  value={selected[group]}
+                  expanded={expandedGroup === group}
+                  disabled={saving}
+                  onToggle={() => {
+                    if (expandedGroup === group) Keyboard.dismiss();
+                    setExpandedGroup(expandedGroup === group ? null : group);
+                  }}
+                  onSelect={(value) => {
+                    setSelected((current) => ({ ...current, [group]: value }));
+                    setExpandedGroup(null);
+                  }}
+                />
+              ))}
             </>
           )}
           <Text style={[styles.fieldLabel, { color: colors.text }]}>
@@ -770,6 +747,7 @@ function AgendaEditor({
           />
           <Button
             label={personal ? "Salvar compromisso" : "Salvar agendamento"}
+            disabled={!canSave}
             loading={saving}
             onPress={save}
           />
@@ -785,56 +763,6 @@ function AgendaEditor({
         </ScrollView>
       </SafeAreaView>
     </Modal>
-  );
-}
-
-function AgendaOptionSelector({
-  colors,
-  title,
-  options,
-  value,
-  onChange,
-}: {
-  colors: AppColors;
-  title: string;
-  options: EntityOption[];
-  value: number;
-  onChange: (id: number) => void;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>{title}</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chips}
-      >
-        {options.map((option) => (
-          <Pressable
-            key={option.id}
-            onPress={() => onChange(option.id)}
-            style={[
-              styles.chip,
-              {
-                borderColor:
-                  value === option.id ? colors.accent : colors.border,
-                backgroundColor:
-                  value === option.id ? colors.accentSoft : colors.surface,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                { color: value === option.id ? colors.accent : colors.text },
-              ]}
-            >
-              {option.name}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-    </View>
   );
 }
 
@@ -909,15 +837,5 @@ const styles = StyleSheet.create({
   modalEyebrow: { fontFamily: fonts.bodyBold, fontSize: 10 },
   modalTitle: { fontFamily: fonts.displayBold, fontSize: 32 },
   form: { gap: 19, paddingHorizontal: 22, paddingBottom: 40 },
-  field: { gap: 7 },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 13 },
-  chips: { gap: 8 },
-  chip: {
-    minHeight: 42,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    justifyContent: "center",
-  },
-  chipText: { fontFamily: fonts.bodyMedium, fontSize: 13 },
 });

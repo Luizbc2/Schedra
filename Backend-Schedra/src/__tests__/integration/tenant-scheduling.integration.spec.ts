@@ -153,7 +153,7 @@ describeWithDatabase("tenant and scheduling database guarantees", () => {
     expect(results.filter((result) => !result.success && result.statusCode === 409)).toHaveLength(1);
   }, 30_000);
 
-  it("preserva o snapshot do agendamento após arquivar o cliente", async () => {
+  it("valida referências e preserva o snapshot do agendamento após arquivar o cliente", async () => {
     const dependencies = await inWorkspace(firstUser, firstWorkspace, async () => ({
       client: await clients.create(firstUser.id, {
         name: "Cliente histórico",
@@ -177,22 +177,31 @@ describeWithDatabase("tenant and scheduling database guarantees", () => {
         description: "",
       }),
     }));
-    const createAppointment = new CreateAppointmentService(appointments, clients, professionals, services);
-    const result = await inWorkspace(firstUser, firstWorkspace, () => createAppointment.execute(firstUser.id, {
+    const input = {
       clientId: dependencies.client.id,
       professionalId: dependencies.professional.id,
       serviceId: dependencies.service.id,
       scheduledAt: "2030-09-04T12:00:00.000Z",
       status: "confirmado",
       notes: "",
-    }));
-    expect(result.success).toBe(true);
-    if (!result.success) return;
+    };
+    const book = (body: typeof input) => request(app).post("/api/appointments").auth(token, { type: "bearer" }).send(body);
+
+    expect((await book({ ...input, scheduledAt: "invalid" })).status).toBe(400);
+    for (const key of ["clientId", "professionalId", "serviceId"] as const) {
+      const missing = await book({ ...input, [key]: 2_147_483_647 });
+      expect(missing.status).toBe(400);
+      expect(missing.body.message).toContain("não encontrado");
+    }
+
+    const result = await book(input);
+    expect(result.status).toBe(201);
+    expect(result.body.appointment.durationMinutes).toBe(30);
 
     await inWorkspace(firstUser, firstWorkspace, () => clients.delete(firstUser.id, dependencies.client.id));
     const [archivedClient, historicalAppointment] = await inWorkspace(firstUser, firstWorkspace, () => Promise.all([
       clients.findById(firstUser.id, dependencies.client.id),
-      appointments.findById(firstUser.id, result.data.appointment.id),
+      appointments.findById(firstUser.id, result.body.appointment.id),
     ]));
 
     expect(archivedClient).toBeNull();

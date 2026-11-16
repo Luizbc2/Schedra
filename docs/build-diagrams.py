@@ -303,9 +303,10 @@ activity(6,"Atividade · entregar lembrete",["Salvar evento\nCom lembrete","Vali
 
 def participants(names,end=842):
     global px
-    px=[155,510,865,1220]
+    px = [round(128 + index * 1184 / (len(names) - 1)) for index in range(len(names))]
+    half_width = 86 if len(names) > 4 else 100
     for x,name in zip(px,names):
-        box(x-100,172,200,64,name,size=18,fill="#F5F7F7")
+        box(x-half_width,172,2*half_width,64,name,size=18,fill="#F5F7F7")
         line([(x,254),(x,end)],dashed=True)
 
 def msg(a,b,y,label,reply=False):
@@ -316,14 +317,27 @@ def msg(a,b,y,label,reply=False):
         issues.append(f"Message too close to its arrow: {label}")
 
 page(7,"Sequência · sincronização offline","A fila usa chave idempotente e versão base para evitar duplicidade e sobrescrita silenciosa.")
-participants(["Usuário","Aplicação web","Service Worker","API / Banco"],end=794)
-for index,(a,b,label,r) in enumerate([(0,1,"Confirmar alteração sem rede",False),(1,2,"Enfileirar operação",False),(2,1,"Estado pendente",True),(2,3,"Conexão voltou: sincronizar",False),(3,2,"200 + nova versão",True),(2,1,"Marcar sincronizado",True),(3,2,"Ou 409 + estado remoto",True),(1,0,"Exibir sucesso ou conflito",True)]):msg(a,b,300+index*68,label,r)
-text(70,822,"Operações administrativas continuam online e nunca entram na fila local.",16,MUTED,width=1290)
+participants(["Usuário", "Aplicação web", "Service Worker", "Fila local", "API", "PostgreSQL"],end=797)
+for a,b,y,label,reply in [
+    (0,1,291,"Salvar offline",False), (1,2,345,"Enfileirar",False),
+    (2,3,399,"Gravar operação",False), (3,2,453,"Pendente",True),
+    (2,4,507,"Reconectou: enviar",False), (4,5,561,"Validar e gravar¹",False),
+    (5,4,615,"Resultado da transação",True), (4,2,672,"200/201 + versão",True),
+    (2,3,723,"Confirmar fila",False), (4,2,788,"409 + estado remoto",True),
+]:
+    left = min(a,b)
+    line([(px[a],y),(px[b],y)],MUTED if reply else ACCENT,True,reply)
+    text(px[left]+20,y-39,label,16,MUTED if reply else INK,width=px[left+1]-px[left]-40)
+text(155,634,"SE VERSÃO COMPATÍVEL",15,ACCENT,width=180)
+line([(150,739),(1290,739)])
+text(155,750,"SE VERSÃO DIVERGENTE",15,ACCENT,width=180)
+text(397,750,"Preservar cópia local",15,MUTED,width=170)
+text(70,822,"¹ Grava apenas se a versão for compatível; duplicatas retornam o resultado anterior. Administração permanece online.",16,MUTED,width=1290)
 finish(7)
 
 page(8,"Sequência · administração web","A tela melhora a gestão, mas toda autorização permanece no backend.")
-participants(["Administrador","Painel web","API / RBAC","Banco / Auditoria"],end=794)
-for index,(a,b,label,r) in enumerate([(0,1,"Pesquisar usuário",False),(1,2,"GET /api/admin/users",False),(2,3,"Revalidar papel e listar",False),(3,2,"Página autorizada",True),(0,1,"Confirmar alteração",False),(1,2,"PATCH papel ou estado",False),(2,3,"Atualizar e auditar",False),(2,1,"200 + usuário atualizado",True)]):msg(a,b,300+index*68,label,r)
+participants(["Administrador","Painel web","API / RBAC","PostgreSQL"],end=794)
+for index,(a,b,label,r) in enumerate([(0,1,"Pesquisar usuário",False),(1,2,"GET /api/admin/users",False),(2,3,"Revalidar papel e listar",False),(2,1,"200 + página autorizada",True),(0,1,"Confirmar alteração",False),(1,2,"PATCH papel ou estado",False),(2,3,"Atualizar e auditar",False),(2,1,"200 atualizado ou 4xx negado",True)]):msg(a,b,300+index*68,label,r)
 text(70,822,"Autoproteção: o administrador não rebaixa, bloqueia ou exclui a própria conta.",16,MUTED,width=1290)
 finish(8)
 

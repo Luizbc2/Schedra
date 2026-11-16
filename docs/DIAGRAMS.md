@@ -1,12 +1,14 @@
 # Diagramas das implementações futuras do Schedra
 
-> Revisão pendente desde 22/10/2026. O [catálogo de revisão](PLANO_REESTRUTURACAO.md#5-conteúdo-exigido-para-todos-os-diagramas) define conteúdo, semântica e aceite visual para todos os desenhos, incluindo o novo DER SQLite. As imagens atuais não representam essa revisão como concluída.
+> Revisão de 12/11/2026: as nove pranchas de proposta e as três de arquitetura atual foram exportadas pelo renderizador do Excalidraw no Chrome. Todos os rótulos ficaram dentro dos quadros; a checagem do gerador verificou afastamento de texto e conectores. As sequências propostas 07 e 08 distinguem a API do banco; 07 separa confirmação e conflito. As propostas continuam não implementadas.
 
 > Catálogo técnico. A proposta consolidada com os diagramas incorporados está em [PROPOSTA.md](PROPOSTA.md).
 
 Os diagramas desta seção representam a solução proposta para lacunas ainda existentes. Eles não afirmam que os componentes, tabelas ou fluxos já estejam implementados.
 
-Versão visual editável: [Schedra-revisado.excalidraw](diagrams/Schedra-revisado.excalidraw). Prévia das nove pranchas: [overview.png](diagrams/overview.png).
+Para a apresentacao da versao entregue, use [fluxos atuais](architecture/FLOWS.md) e [arquitetura atual](architecture/README.md).
+
+Versão visual editável: [Schedra-revisado.excalidraw](diagrams/Schedra-revisado.excalidraw). Prévia das nove pranchas: [overview.png](diagrams/overview.png). A [sequência revisada](diagrams/07.png) pode ser comparada à [anterior](https://github.com/Luizbc2/Schedra/blob/ab6f3367cf9d550650764cef28cf2ff8f3d19c0b/docs/diagrams/07.png). O [relatório de layout](diagrams/layout-check.json) registra a checagem reproduzível com `python docs/build-diagrams.py` (Pillow e Arial).
 
 ## Banco atual
 
